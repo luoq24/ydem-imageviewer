@@ -7,6 +7,10 @@ void ViewerApp::ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool
     auto getInt = [&](LPCWSTR sec, LPCWSTR key, int def) { return GetPrivateProfileIntW(sec, key, def, path.c_str());
         };
 
+    // 语言：0 = 中文（默认），1 = 英文
+    int langChoice = getInt(L"Settings", L"Language", 0);
+    I18n::SetLanguage(langChoice == 1 ? AppLanguage::English : AppLanguage::Chinese);
+
     fullscreen = getInt(L"Settings", L"StartFullScreen", 0) == 1;
     singleInstance = getInt(L"Settings", L"EnforceSingleInstance", 1) == 1;
     m_ctx.alwaysOnTop = getInt(L"Settings", L"AlwaysOnTop", 0) == 1;
@@ -64,6 +68,7 @@ void ViewerApp::WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& w
         };
 
     writeInt(L"Settings", L"StartFullScreen", fullscreen ? 1 : 0);
+    writeInt(L"Settings", L"Language", I18n::GetLanguage() == AppLanguage::English ? 1 : 0);
     writeInt(L"Settings", L"EnforceSingleInstance", singleInstance ? 1 : 0);
     writeInt(L"Settings", L"AlwaysOnTop", alwaysOnTop ? 1 : 0);
     writeInt(L"Settings", L"SmoothScaling", m_ctx.smoothScaling ? 1 : 0);

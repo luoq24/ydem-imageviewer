@@ -16,7 +16,7 @@ static std::wstring FormatFileTime(const FILETIME& ft) {
     if (SHFormatDateTimeW(&ft, &flags, szDateTime, ARRAYSIZE(szDateTime)) > 0) {
         return szDateTime;
     }
-    return L"N/A";
+    return Tr(StrId::PropNa);
 }
 
 static std::wstring FormatFileSize(const LARGE_INTEGER& fileSize) {
@@ -24,7 +24,7 @@ static std::wstring FormatFileSize(const LARGE_INTEGER& fileSize) {
     StrFormatByteSizeW(fileSize.QuadPart, szSize, ARRAYSIZE(szSize));
 
     if (fileSize.QuadPart >= 1024) {
-        return std::format(L"{} ({} Bytes)", szSize, fileSize.QuadPart);
+        return std::vformat(Tr(StrId::PropFileSizeFormat), std::make_wformat_args(szSize, fileSize.QuadPart));
     }
     return szSize;
 }
@@ -38,7 +38,9 @@ ImageProperties ViewerApp::GetCurrentOsdProperties() {
 
     pProps.filePath = m_ctx.imageFiles[m_ctx.currentImageIndex];
     UINT w = 0, h = 0;
-    if (GetCurrentImageSize(&w, &h)) pProps.dimensions = std::format(L"{} x {} pixels", w, h);
+    if (GetCurrentImageSize(&w, &h)) {
+        pProps.dimensions = std::vformat(Tr(StrId::PropPixelsFormat), std::make_wformat_args(w, h));
+    }
 
     WIN32_FILE_ATTRIBUTE_DATA fad = {};
     if (GetFileAttributesExW(pProps.filePath.c_str(), GetFileExInfoStandard, &fad)) {
@@ -47,13 +49,13 @@ ImageProperties ViewerApp::GetCurrentOsdProperties() {
         pProps.createdDate = FormatFileTime(fad.ftCreationTime);
         pProps.modifiedDate = FormatFileTime(fad.ftLastWriteTime);
         pProps.accessedDate = FormatFileTime(fad.ftLastAccessTime);
-        if (fad.dwFileAttributes & FILE_ATTRIBUTE_READONLY) pProps.attributes += L"Read-only; ";
-        if (fad.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) pProps.attributes += L"Hidden; ";
-        if (fad.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) pProps.attributes += L"System; ";
-        if (pProps.attributes.empty()) pProps.attributes = L"Normal";
+        if (fad.dwFileAttributes & FILE_ATTRIBUTE_READONLY) pProps.attributes += Tr(StrId::PropAttrReadOnly);
+        if (fad.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) pProps.attributes += Tr(StrId::PropAttrHidden);
+        if (fad.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) pProps.attributes += Tr(StrId::PropAttrSystem);
+        if (pProps.attributes.empty()) pProps.attributes = Tr(StrId::PropAttrNormal);
     }
     else {
-        pProps.attributes = L"N/A";
+        pProps.attributes = Tr(StrId::PropNa);
     }
 
     ComPtr<IWICBitmapDecoder> decoder;
@@ -102,6 +104,6 @@ void ViewerApp::ShowImageProperties() {
 
     std::wstring filePath = m_ctx.imageFiles[m_ctx.currentImageIndex];
 
-    // Windows property sheet
-    SHObjectProperties(m_ctx.hWnd, SHOP_FILEPATH, filePath.c_str(), L"Details");
+    // Windows property sheet（“详细信息”页名称随语言变化）
+    SHObjectProperties(m_ctx.hWnd, SHOP_FILEPATH, filePath.c_str(), Tr(StrId::PropDetailsTab));
 }

@@ -102,17 +102,17 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
     timeBeginPeriod(1);
 
     if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_ctx.wicFactory)))) {
-        MessageBoxW(nullptr, L"Failed to create WIC Imaging Factory.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, Tr(StrId::ErrWicFactory), Tr(StrId::ErrCaption), MB_OK | MB_ICONERROR);
         return 1;
     }
 
     if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), (void**)&m_ctx.d2dFactory))) {
-        MessageBoxW(nullptr, L"Failed to create Direct2D Factory.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, Tr(StrId::ErrD2dFactory), Tr(StrId::ErrCaption), MB_OK | MB_ICONERROR);
         return 1;
     }
 
     if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(m_ctx.writeFactory.GetAddressOf())))) {
-        MessageBoxW(nullptr, L"Failed to create DirectWrite Factory.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, Tr(StrId::ErrDWriteFactory), Tr(StrId::ErrCaption), MB_OK | MB_ICONERROR);
         return 1;
     }
 
@@ -141,13 +141,13 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
     m_ctx.hWnd = CreateWindowExW(
         exStyle,
         wcex.lpszClassName,
-        L"Minimal Image Viewer v2.0.3",
+        AppNameAndVersion(),
         WS_OVERLAPPEDWINDOW,
         x, y, w, h,
         nullptr, nullptr, hInstance, this
     );
     if (!m_ctx.hWnd) {
-        MessageBoxW(nullptr, L"Failed to create window.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, Tr(StrId::ErrCreateWindow), Tr(StrId::ErrCaption), MB_OK | MB_ICONERROR);
         CoUninitialize();
         return 1;
     }

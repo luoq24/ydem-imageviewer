@@ -1,4 +1,5 @@
 #include "viewer.h"
+#include <format>
 
 
 
@@ -6,7 +7,7 @@ void ViewerApp::OpenFileAction() {
     wchar_t szFile[MAX_PATH] = { 0 };
     OPENFILENAMEW ofn = { sizeof(OPENFILENAMEW) };
     ofn.hwndOwner = m_ctx.hWnd;
-    ofn.lpstrFilter = L"All Image Files\0*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.tiff;*.tif;*.ico;*.webp;*.heic;*.heif;*.avif;*.cr2;*.cr3;*.nef;*.dng;*.arw;*.orf;*.rw2;*.svg;*.qoi;*.hdr\0HDR Files (*.hdr)\0*.hdr\0SVG Files (*.svg)\0*.svg\0QOI Files (*.qoi)\0*.qoi\0PNG Files (*.png)\0*.png\0JPEG Files (*.jpg;*.jpeg)\0*.jpg;*.jpeg\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFilter = Tr(StrId::FilterOpen);
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER;
@@ -19,7 +20,7 @@ void ViewerApp::DeleteCurrentImage() {
     if (m_ctx.currentImageIndex < 0 || m_ctx.imageFiles.empty()) return;
 
     if (m_ctx.askToDelete) {
-        if (MessageBoxW(m_ctx.hWnd, L"Are you sure you want to delete?", L"Confirm Delete", MB_YESNO | MB_ICONWARNING) != IDYES) {
+        if (MessageBoxW(m_ctx.hWnd, Tr(StrId::DeleteConfirmMsg), Tr(StrId::DeleteConfirmTitle), MB_YESNO | MB_ICONWARNING) != IDYES) {
             return;
         }
     }
@@ -60,7 +61,7 @@ void ViewerApp::DeleteCurrentImage() {
                                     m_ctx.loadingFilePath = L"";
                                 }
                                 InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
-                                SetWindowTextW(m_ctx.hWnd, L"Minimal Image Viewer v2.0.3");
+                                SetWindowTextW(m_ctx.hWnd, AppNameAndVersion());
                             }
                             else {
                                 if (m_ctx.currentImageIndex >= static_cast<int>(m_ctx.imageFiles.size())) {
@@ -165,7 +166,9 @@ void ViewerApp::HandlePaste() {
 
                         // stop animations
                         KillTimer(m_ctx.hWnd, ANIMATION_TIMER_ID);
-                        SetWindowTextW(m_ctx.hWnd, L"Clipboard Image - Minimal Image Viewer v2.0.3");
+                        LPCWSTR appTitle = AppNameAndVersion();
+                        std::wstring clipTitle = std::vformat(Tr(StrId::TitleClipboardFormat), std::make_wformat_args(appTitle));
+                        SetWindowTextW(m_ctx.hWnd, clipTitle.c_str());
                         InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
                     }
                 }

@@ -6,10 +6,10 @@
 #include <format>
 
 std::wstring GetPropertyString(IPropertyStore* pStore, REFPROPERTYKEY key) {
-    if (!pStore) return L"N/A";
+    if (!pStore) return Tr(StrId::PropNa);
 
     wil::unique_prop_variant propValue;
-    std::wstring val = L"N/A";
+    std::wstring val = Tr(StrId::PropNa);
 
     if (SUCCEEDED(pStore->GetValue(key, &propValue))) {
         wil::unique_cotaskmem_string pszDisplayValue;
@@ -23,17 +23,17 @@ std::wstring GetPropertyString(IPropertyStore* pStore, REFPROPERTYKEY key) {
 }
 
 std::wstring GetContainerFormatName(const GUID& guid, IWICImagingFactory* wicFactory) {
-    if (!wicFactory) return L"Unknown";
+    if (!wicFactory) return Tr(StrId::PropUnknown);
 
     ComPtr<IWICComponentInfo> componentInfo;
     if (FAILED(wicFactory->CreateComponentInfo(guid, &componentInfo))) {
-        return L"Unknown";
+        return Tr(StrId::PropUnknown);
     }
 
     UINT cchActual = 0;
     // Get buffer length
     if (FAILED(componentInfo->GetFriendlyName(0, nullptr, &cchActual)) || cchActual == 0) {
-        return L"Unknown";
+        return Tr(StrId::PropUnknown);
     }
 
     // Fetch name
@@ -43,28 +43,28 @@ std::wstring GetContainerFormatName(const GUID& guid, IWICImagingFactory* wicFac
         return name;
     }
 
-    return L"Unknown";
+    return Tr(StrId::PropUnknown);
 }
 
 std::wstring GetBitDepth(IWICBitmapFrameDecode* pFrame, IWICImagingFactory* wicFactory) {
     WICPixelFormatGUID pixelFormatGuid;
     if (FAILED(pFrame->GetPixelFormat(&pixelFormatGuid))) {
-        return L"N/A";
+        return Tr(StrId::PropNa);
     }
 
     ComPtr<IWICComponentInfo> componentInfo;
     if (FAILED(wicFactory->CreateComponentInfo(pixelFormatGuid, &componentInfo))) {
-        return L"N/A";
+        return Tr(StrId::PropNa);
     }
 
     ComPtr<IWICPixelFormatInfo> pixelFormatInfo;
     if (FAILED(componentInfo->QueryInterface(IID_PPV_ARGS(&pixelFormatInfo)))) {
-        return L"N/A";
+        return Tr(StrId::PropNa);
     }
 
     UINT bpp = 0;
     if (SUCCEEDED(pixelFormatInfo->GetBitsPerPixel(&bpp))) {
-        return std::format(L"{}-bit", bpp);
+        return std::vformat(Tr(StrId::PropBitDepthFormat), std::make_wformat_args(bpp));
     }
-    return L"N/A";
+    return Tr(StrId::PropNa);
 }

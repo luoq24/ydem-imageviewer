@@ -188,12 +188,13 @@ void ViewerApp::SaveImageAs() {
     UINT imgWidth, imgHeight;
     if (!GetCurrentImageSize(&imgWidth, &imgHeight)) return;
 
-    wchar_t szFile[MAX_PATH] = L"Untitled.png";
+    wchar_t szFile[MAX_PATH] = { 0 };
+    wcscpy_s(szFile, (std::wstring(Tr(StrId::DefaultFileName)) + L".png").c_str());
     OPENFILENAMEW ofn = { sizeof(ofn) };
     ofn.hwndOwner = m_ctx.hWnd;
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFilter = L"PNG File (*.png)\0*.png\0JPEG File (*.jpg)\0*.jpg\0BMP File (*.bmp)\0*.bmp\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFilter = Tr(StrId::FilterSave);
     ofn.nFilterIndex = 1;
     ofn.lpstrDefExt = L"png";
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
@@ -209,7 +210,7 @@ void ViewerApp::SaveImageAs() {
 
     ComPtr<IWICBitmapSource> source = GetSaveSource(containerFormat);
     if (!source) {
-        MessageBoxW(m_ctx.hWnd, L"Could not get image source to save.", L"Save Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveErrSource), Tr(StrId::SaveErrCaption), MB_ICONERROR);
         return;
     }
 
@@ -219,7 +220,7 @@ void ViewerApp::SaveImageAs() {
         LoadImageFromFile(ofn.lpstrFile);
     }
     else {
-        MessageBoxW(m_ctx.hWnd, L"Failed to save image.", L"Save As Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveFailed), Tr(StrId::SaveAsErrCaption), MB_ICONERROR);
     }
 }
 
@@ -234,14 +235,14 @@ void ViewerApp::SaveImage() {
 
     const std::wstring& originalPath = m_ctx.imageFiles[m_ctx.currentImageIndex];
     if (m_ctx.rotationAngle == 0 && !m_ctx.isFlippedHorizontal && !m_ctx.isCropActive) {
-        MessageBoxW(m_ctx.hWnd, L"No changes to save.", L"Save", MB_OK | MB_ICONINFORMATION);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveNoChanges), Tr(StrId::SaveCaption), MB_OK | MB_ICONINFORMATION);
         return;
     }
 
     // AVIF/HEIC save prompt
     const wchar_t* ext = PathFindExtensionW(originalPath.c_str());
     if (ext && (_wcsicmp(ext, L".heic") == 0 || _wcsicmp(ext, L".heif") == 0 || _wcsicmp(ext, L".avif") == 0)) {
-        if (MessageBoxW(m_ctx.hWnd, L"HEIC and AVIF files cannot be natively overwritten. Would you like to save your edits as a PNG instead?", L"Save Edits", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+        if (MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveEditsMsg), Tr(StrId::SaveEditsTitle), MB_YESNO | MB_ICONQUESTION) == IDYES) {
 
             wchar_t newPath[MAX_PATH];
             wcscpy_s(newPath, MAX_PATH, originalPath.c_str());
@@ -252,7 +253,7 @@ void ViewerApp::SaveImage() {
                 LoadImageFromFile(newPath);
             }
             else {
-                MessageBoxW(m_ctx.hWnd, L"Failed to save as PNG.", L"Save Error", MB_ICONERROR);
+                MessageBoxW(m_ctx.hWnd, Tr(StrId::SavePngFailed), Tr(StrId::SaveErrCaption), MB_ICONERROR);
             }
         }
         return;
@@ -266,13 +267,13 @@ void ViewerApp::SaveImage() {
     }
 
     if (containerFormat == GUID_NULL) {
-        MessageBoxW(m_ctx.hWnd, L"Could not determine original file format. Use 'Save As'.", L"Save Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveUnknownFormat), Tr(StrId::SaveErrCaption), MB_ICONERROR);
         return;
     }
 
     ComPtr<IWICBitmapSource> source = GetSaveSource(containerFormat);
     if (!source) {
-        MessageBoxW(m_ctx.hWnd, L"Could not get image source to save.", L"Save Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveErrSource), Tr(StrId::SaveErrCaption), MB_ICONERROR);
         return;
     }
 
@@ -285,12 +286,12 @@ void ViewerApp::SaveImage() {
         }
         else {
             DeleteFileW(tempPath.c_str());
-            MessageBoxW(m_ctx.hWnd, L"Failed to replace the original file.", L"Save Error", MB_ICONERROR);
+            MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveReplaceFailed), Tr(StrId::SaveErrCaption), MB_ICONERROR);
         }
     }
     else {
         DeleteFileW(tempPath.c_str());
-        MessageBoxW(m_ctx.hWnd, L"Failed to save image to temporary file.", L"Save Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::SaveTempFailed), Tr(StrId::SaveErrCaption), MB_ICONERROR);
     }
 }
 
@@ -305,7 +306,7 @@ void ViewerApp::SaveImageWithResize(const std::wstring& filePath, const GUID& co
             source = m_ctx.wicConverterOriginal;
         }
         else {
-            MessageBoxW(m_ctx.hWnd, L"Could not get image source to resize.", L"Resize Error", MB_ICONERROR);
+            MessageBoxW(m_ctx.hWnd, Tr(StrId::ResizeSource), Tr(StrId::ResizeErrCaption), MB_ICONERROR);
             return;
         }
     }
@@ -318,12 +319,12 @@ void ViewerApp::SaveImageWithResize(const std::wstring& filePath, const GUID& co
             source = scaler;
         }
         else {
-            MessageBoxW(m_ctx.hWnd, L"Failed to initialize image scaler.", L"Resize Error", MB_ICONERROR);
+            MessageBoxW(m_ctx.hWnd, Tr(StrId::ResizeInitFailed), Tr(StrId::ResizeErrCaption), MB_ICONERROR);
             return;
         }
     }
     else {
-        MessageBoxW(m_ctx.hWnd, L"Failed to create image scaler.", L"Resize Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ResizeCreateFailed), Tr(StrId::ResizeErrCaption), MB_ICONERROR);
         return;
     }
 
@@ -342,7 +343,7 @@ void ViewerApp::SaveImageWithResize(const std::wstring& filePath, const GUID& co
         LoadImageFromFile(filePath.c_str());
     }
     else {
-        MessageBoxW(m_ctx.hWnd, L"Failed to save resized image.", L"Resize Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ResizeSaveFailed), Tr(StrId::ResizeErrCaption), MB_ICONERROR);
     }
 }
 
@@ -357,6 +358,12 @@ struct ResizeDialogParams {
 static INT_PTR CALLBACK ResizeDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_INITDIALOG: {
+        SetWindowTextW(hDlg, Tr(StrId::DlgResizeTitle));
+        SetDlgItemTextW(hDlg, IDC_STATIC_RESIZE_WIDTH, Tr(StrId::ResizeWidth));
+        SetDlgItemTextW(hDlg, IDC_STATIC_RESIZE_HEIGHT, Tr(StrId::ResizeHeight));
+        SetDlgItemTextW(hDlg, IDC_CHECK_ASPECT, Tr(StrId::ResizeAspect));
+        SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnOk));
+        SetDlgItemTextW(hDlg, IDCANCEL, Tr(StrId::BtnCancel));
         ResizeDialogParams* pParams = reinterpret_cast<ResizeDialogParams*>(lParam);
         pParams->isUpdating = false;
         SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)pParams);
@@ -403,7 +410,7 @@ static INT_PTR CALLBACK ResizeDialogProc(HWND hDlg, UINT message, WPARAM wParam,
                     EndDialog(hDlg, IDOK);
                 }
                 else {
-                    MessageBoxW(hDlg, L"Please enter valid (non-zero) positive numbers for width and height.", L"Invalid Input", MB_ICONERROR);
+                    MessageBoxW(hDlg, Tr(StrId::ResizeInvalidMsg), Tr(StrId::InvalidInputCaption), MB_ICONERROR);
                 }
             }
             return (INT_PTR)TRUE;
@@ -420,7 +427,7 @@ static INT_PTR CALLBACK ResizeDialogProc(HWND hDlg, UINT message, WPARAM wParam,
 void ViewerApp::ResizeImageAction() {
     ResizeDialogParams params = {};
     if (!GetCurrentImageSize(&params.origWidth, &params.origHeight)) {
-        MessageBoxW(m_ctx.hWnd, L"No image loaded to resize.", L"Resize Error", MB_ICONERROR);
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ResizeNoImage), Tr(StrId::ResizeErrCaption), MB_ICONERROR);
         return;
     }
     params.newWidth = params.origWidth;
@@ -428,8 +435,9 @@ void ViewerApp::ResizeImageAction() {
 
     if (DialogBoxParam(m_ctx.hInst, MAKEINTRESOURCE(IDD_RESIZE_DIALOG), m_ctx.hWnd, ResizeDialogProc, (LPARAM)&params) == IDOK) {
 
-        wchar_t szFile[MAX_PATH] = L"Untitled.png";
-        const wchar_t* filter = L"PNG File (*.png)\0*.png\0JPEG File (*.jpg)\0*.jpg\0BMP File (*.bmp)\0*.bmp\0All Files (*.*)\0*.*\0";
+        wchar_t szFile[MAX_PATH] = { 0 };
+        wcscpy_s(szFile, (std::wstring(Tr(StrId::DefaultFileName)) + L".png").c_str());
+        const wchar_t* filter = Tr(StrId::FilterSave);
         UINT filterIndex = 1;
         const wchar_t* defaultExt = L"png";
 
@@ -442,12 +450,12 @@ void ViewerApp::ResizeImageAction() {
         if (originalFormat == GUID_ContainerFormatJpeg) {
             filterIndex = 2;
             defaultExt = L"jpg";
-            wcscpy_s(szFile, L"Untitled.jpg");
+            wcscpy_s(szFile, (std::wstring(Tr(StrId::DefaultFileName)) + L".jpg").c_str());
         }
         else if (originalFormat == GUID_ContainerFormatBmp) {
             filterIndex = 3;
             defaultExt = L"bmp";
-            wcscpy_s(szFile, L"Untitled.bmp");
+            wcscpy_s(szFile, (std::wstring(Tr(StrId::DefaultFileName)) + L".bmp").c_str());
         }
 
         if (m_ctx.currentImageIndex >= 0 && m_ctx.currentImageIndex < static_cast<int>(m_ctx.imageFiles.size())) {

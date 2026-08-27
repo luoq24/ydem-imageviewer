@@ -4,6 +4,7 @@
 #include <shlwapi.h> 
 #include <filesystem>
 #include <propkey.h>
+#include <format>
 
 #pragma warning(push)
 #pragma warning(disable : 4996) // Suppress 'fopen' unsafe error
@@ -286,8 +287,8 @@ void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd)
             if (hdrPixelsCount > HDR_MAX_PIXELS) {
                 MessageBoxW(
                     m_ctx.hWnd,
-                    L"This HDR image is too large for the stb_image HDR loader safety limit.",
-                    L"HDR Image Too Large",
+                    Tr(StrId::HdrTooLargeMsg),
+                    Tr(StrId::HdrTooLargeTitle),
                     MB_ICONWARNING
                 );
                 PostMessage(m_ctx.hWnd, WM_APP_IMAGE_LOAD_FAILED, 0, (LPARAM)mySeqId);
@@ -558,8 +559,8 @@ void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd)
             // Intercept HEIC/AVIF failures and prompt to install the lightweight native codec
             if (ext && (_wcsicmp(ext, L".heic") == 0 || _wcsicmp(ext, L".heif") == 0 || _wcsicmp(ext, L".avif") == 0)) {
                 if (MessageBoxW(m_ctx.hWnd,
-                    L"To view HEIC and AVIF images natively, you need the free 'HEIF Image Extensions' from the Microsoft Store.\n\nWould you like to open the Store page?",
-                    L"Missing Image Codec", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
+                    Tr(StrId::CodecMissingMsg),
+                    Tr(StrId::CodecMissingTitle), MB_YESNO | MB_ICONINFORMATION) == IDYES) {
                     // Deep link directly to the Microsoft Store page for the official HEIF extension
                     ShellExecuteW(nullptr, L"open", L"ms-windows-store://pdp/?ProductId=9PMMSR1CGPWG", nullptr, nullptr, SW_SHOW);
                 }
@@ -1001,7 +1002,9 @@ void ViewerApp::OnImageReady(bool success, int seqId) {
         m_ctx.wicConverter = nullptr;
         m_ctx.wicConverterOriginal = nullptr;
         m_ctx.undoStack.clear();
-        SetWindowTextW(m_ctx.hWnd, L"Load Failed - Minimal Image Viewer v2.0.3");
+        LPCWSTR appTitle = AppNameAndVersion();
+        std::wstring loadFailedTitle = std::vformat(Tr(StrId::TitleLoadFailedFormat), std::make_wformat_args(appTitle));
+        SetWindowTextW(m_ctx.hWnd, loadFailedTitle.c_str());
     }
 
     InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
@@ -1037,7 +1040,7 @@ void ViewerApp::FinalizeImageLoad(bool success, int foundIndex) {
     }
     else {
         m_ctx.currentImageIndex = -1;
-        SetWindowTextW(m_ctx.hWnd, L"Minimal Image Viewer v2.0.3");
+        SetWindowTextW(m_ctx.hWnd, AppNameAndVersion());
         CenterImage(true);
     }
 }

@@ -76,5 +76,13 @@
 #define IDC_CHECK_SHOW_OSD          2030
 #define IDC_CHECK_ASK_DELETE        2031
 #define IDC_CHECK_PRESERVE_ZOOM     2032
+#define IDC_STATIC_LANG_GROUP       2033
+#define IDC_RADIO_LANG_ZH           2034
+#define IDC_RADIO_LANG_EN           2035
+#define IDC_STATIC_KB_ACTION        2036
+#define IDC_STATIC_KB_SHORTCUT      2037
+#define IDC_STATIC_ZOOM_LABEL       2038
+#define IDC_STATIC_RESIZE_WIDTH     2039
+#define IDC_STATIC_RESIZE_HEIGHT    2040
 
 #define IDC_STATIC                  -1

@@ -12,6 +12,34 @@ T* GetAppFromDialog(HWND hDlg, UINT message, LPARAM lParam) {
     return reinterpret_cast<T*>(GetWindowLongPtr(hDlg, GWLP_USERDATA));
 }
 
+// 对话框控件文本在显示前统一替换为当前语言的文本
+static void LocalizePreferencesDialog(HWND hDlg) {
+    SetWindowTextW(hDlg, Tr(StrId::DlgPreferencesTitle));
+    SetDlgItemTextW(hDlg, IDC_STATIC_BG_GROUP, Tr(StrId::PrefBgGroup));
+    SetDlgItemTextW(hDlg, IDC_RADIO_BG_GREY, Tr(StrId::PrefBgGrey));
+    SetDlgItemTextW(hDlg, IDC_RADIO_BG_BLACK, Tr(StrId::PrefBgBlack));
+    SetDlgItemTextW(hDlg, IDC_RADIO_BG_WHITE, Tr(StrId::PrefBgWhite));
+    SetDlgItemTextW(hDlg, IDC_RADIO_BG_TRANSPARENT, Tr(StrId::PrefBgTransparent));
+    SetDlgItemTextW(hDlg, IDC_STATIC_APP_GROUP, Tr(StrId::PrefAppGroup));
+    SetDlgItemTextW(hDlg, IDC_CHECK_ALWAYS_ON_TOP, Tr(StrId::PrefAlwaysOnTop));
+    SetDlgItemTextW(hDlg, IDC_CHECK_START_FULLSCREEN, Tr(StrId::PrefStartFullscreen));
+    SetDlgItemTextW(hDlg, IDC_CHECK_SINGLE_INSTANCE, Tr(StrId::PrefSingleInstance));
+    SetDlgItemTextW(hDlg, IDC_CHECK_AUTO_REFRESH, Tr(StrId::PrefAutoRefresh));
+    SetDlgItemTextW(hDlg, IDC_CHECK_SMOOTH_SCALING, Tr(StrId::PrefSmoothScaling));
+    SetDlgItemTextW(hDlg, IDC_CHECK_FADE_ANIMATION, Tr(StrId::PrefFadeAnimation));
+    SetDlgItemTextW(hDlg, IDC_CHECK_SHOW_OSD, Tr(StrId::PrefShowOsd));
+    SetDlgItemTextW(hDlg, IDC_CHECK_ASK_DELETE, Tr(StrId::PrefAskDelete));
+    SetDlgItemTextW(hDlg, IDC_CHECK_PRESERVE_ZOOM, Tr(StrId::PrefPreserveZoom));
+    SetDlgItemTextW(hDlg, IDC_STATIC_ZOOM_GROUP, Tr(StrId::PrefZoomGroup));
+    SetDlgItemTextW(hDlg, IDC_RADIO_ZOOM_FIT, Tr(StrId::PrefZoomFit));
+    SetDlgItemTextW(hDlg, IDC_RADIO_ZOOM_ACTUAL, Tr(StrId::PrefZoomActual));
+    SetDlgItemTextW(hDlg, IDC_STATIC_LANG_GROUP, Tr(StrId::PrefLanguageGroup));
+    SetDlgItemTextW(hDlg, IDC_RADIO_LANG_ZH, Tr(StrId::PrefLangZh));
+    SetDlgItemTextW(hDlg, IDC_RADIO_LANG_EN, Tr(StrId::PrefLangEn));
+    SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnOk));
+    SetDlgItemTextW(hDlg, IDCANCEL, Tr(StrId::BtnCancel));
+}
+
 INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     ViewerApp* pApp = nullptr;
     if (message == WM_INITDIALOG) {
@@ -35,6 +63,8 @@ INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARA
             ctx.darkBrush.reset();
         }
 
+        LocalizePreferencesDialog(hDlg);
+
         int bgRadio = IDC_RADIO_BG_GREY + static_cast<int>(ctx.bgColor);
         CheckRadioButton(hDlg, IDC_RADIO_BG_GREY, IDC_RADIO_BG_TRANSPARENT, bgRadio);
         CheckDlgButton(hDlg, IDC_CHECK_ALWAYS_ON_TOP, ctx.alwaysOnTop ? BST_CHECKED : BST_UNCHECKED);
@@ -49,6 +79,9 @@ INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARA
 
         CheckRadioButton(hDlg, IDC_RADIO_ZOOM_FIT, IDC_RADIO_ZOOM_ACTUAL,
             ctx.defaultZoomMode == DefaultZoomMode::Fit ? IDC_RADIO_ZOOM_FIT : IDC_RADIO_ZOOM_ACTUAL);
+
+        CheckRadioButton(hDlg, IDC_RADIO_LANG_ZH, IDC_RADIO_LANG_EN,
+            I18n::GetLanguage() == AppLanguage::Chinese ? IDC_RADIO_LANG_ZH : IDC_RADIO_LANG_EN);
         return (INT_PTR)TRUE;
     }
     case WM_COMMAND:
@@ -91,6 +124,15 @@ INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARA
             }
             else if (IsDlgButtonChecked(hDlg, IDC_RADIO_ZOOM_ACTUAL)) {
                 ctx.defaultZoomMode = DefaultZoomMode::Actual;
+            }
+
+            // 语言切换：立即生效（菜单在每次打开时重建，OSD 缓存需要失效）
+            const AppLanguage newLanguage = IsDlgButtonChecked(hDlg, IDC_RADIO_LANG_EN) == BST_CHECKED
+                ? AppLanguage::English : AppLanguage::Chinese;
+            if (newLanguage != I18n::GetLanguage()) {
+                I18n::SetLanguage(newLanguage);
+                ctx.isOsdCacheValid = false;
+                pApp->UpdateWindowTitle();
             }
 
             // Immediate update from fullscreen setting
@@ -155,13 +197,13 @@ std::wstring ViewerApp::GetHotkeyString(WORD hk) {
 
     wchar_t keyName[64] = { 0 };
     switch (vk) {
-    case VK_LEFT: wcscpy_s(keyName, L"Left Arrow"); break;
-    case VK_RIGHT: wcscpy_s(keyName, L"Right Arrow"); break;
-    case VK_UP: wcscpy_s(keyName, L"Up Arrow"); break;
-    case VK_DOWN: wcscpy_s(keyName, L"Down Arrow"); break;
+    case VK_LEFT: wcscpy_s(keyName, Tr(StrId::HkLeft)); break;
+    case VK_RIGHT: wcscpy_s(keyName, Tr(StrId::HkRight)); break;
+    case VK_UP: wcscpy_s(keyName, Tr(StrId::HkUp)); break;
+    case VK_DOWN: wcscpy_s(keyName, Tr(StrId::HkDown)); break;
     case VK_ESCAPE: wcscpy_s(keyName, L"Esc"); break;
     case VK_RETURN: wcscpy_s(keyName, L"Enter"); break;
-    case VK_SPACE: wcscpy_s(keyName, L"Spacebar"); break;
+    case VK_SPACE: wcscpy_s(keyName, Tr(StrId::HkSpacebar)); break;
     case VK_DELETE: wcscpy_s(keyName, L"Delete"); break;
     case VK_INSERT: wcscpy_s(keyName, L"Insert"); break;
     case VK_HOME: wcscpy_s(keyName, L"Home"); break;
@@ -175,16 +217,20 @@ std::wstring ViewerApp::GetHotkeyString(WORD hk) {
     case VK_MULTIPLY: wcscpy_s(keyName, L"*"); break;
     case VK_DIVIDE: wcscpy_s(keyName, L"/"); break;
     case VK_TAB: wcscpy_s(keyName, L"Tab"); break;
-    case VK_NUMPAD0: wcscpy_s(keyName, L"Numpad 0"); break;
-    case VK_NUMPAD1: wcscpy_s(keyName, L"Numpad 1"); break;
-    case VK_NUMPAD2: wcscpy_s(keyName, L"Numpad 2"); break;
-    case VK_NUMPAD3: wcscpy_s(keyName, L"Numpad 3"); break;
-    case VK_NUMPAD4: wcscpy_s(keyName, L"Numpad 4"); break;
-    case VK_NUMPAD5: wcscpy_s(keyName, L"Numpad 5"); break;
-    case VK_NUMPAD6: wcscpy_s(keyName, L"Numpad 6"); break;
-    case VK_NUMPAD7: wcscpy_s(keyName, L"Numpad 7"); break;
-    case VK_NUMPAD8: wcscpy_s(keyName, L"Numpad 8"); break;
-    case VK_NUMPAD9: wcscpy_s(keyName, L"Numpad 9"); break;
+    case VK_NUMPAD0:
+    case VK_NUMPAD1:
+    case VK_NUMPAD2:
+    case VK_NUMPAD3:
+    case VK_NUMPAD4:
+    case VK_NUMPAD5:
+    case VK_NUMPAD6:
+    case VK_NUMPAD7:
+    case VK_NUMPAD8:
+    case VK_NUMPAD9: {
+        std::wstring numPad = std::wstring(Tr(StrId::HkNumpadPrefix)) + static_cast<wchar_t>(L'0' + (vk - VK_NUMPAD0));
+        wcscpy_s(keyName, numPad.c_str());
+        break;
+    }
     default: {
         UINT scanCode = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
         LONG lParam = (scanCode << 16);
@@ -198,13 +244,51 @@ std::wstring ViewerApp::GetHotkeyString(WORD hk) {
     return str;
 }
 
-static const wchar_t* ActionNames[] = {
-    L"Next Image", L"Previous Image", L"Zoom In", L"Zoom Out", L"Fit to Window", L"Actual Size",
-    L"Fullscreen", L"Rotate Clockwise", L"Rotate Counter-Clockwise", L"Flip", L"Crop", L"Custom Zoom", L"Exit",
-    L"Open File", L"Refresh", L"Copy", L"Paste", L"Save", L"Save As", L"Delete Image", L"Undo",
-    L"Center Image", L"Commit Crop", L"Toggle OSD", L"Play/Pause Animation", L"Resume Animation",
-    L"Next Frame", L"Previous Frame", L"First Frame", L"Open Context Menu", L"Toggle Slideshow"
-};
+// 快捷键对话框中显示的动作名称（按 ActionID 顺序），随当前语言返回
+static const wchar_t* GetActionName(int actionIndex) {
+    switch (static_cast<ActionID>(actionIndex)) {
+    case Act_Next:         return Tr(StrId::MenuNextImage);
+    case Act_Prev:         return Tr(StrId::MenuPrevImage);
+    case Act_ZoomIn:       return Tr(StrId::MenuZoomIn);
+    case Act_ZoomOut:      return Tr(StrId::MenuZoomOut);
+    case Act_Fit:          return Tr(StrId::MenuFitToWindow);
+    case Act_Actual:       return Tr(StrId::ActNameActualSize);
+    case Act_Fullscreen:   return Tr(StrId::ActNameFullscreen);
+    case Act_RotateCW:     return Tr(StrId::MenuRotateCW);
+    case Act_RotateCCW:    return Tr(StrId::MenuRotateCCW);
+    case Act_Flip:         return Tr(StrId::MenuFlip);
+    case Act_Crop:         return Tr(StrId::MenuCrop);
+    case Act_CustomZoom:   return Tr(StrId::ActNameCustomZoom);
+    case Act_Exit:         return Tr(StrId::MenuExit);
+    case Act_Open:         return Tr(StrId::ActNameOpenFile);
+    case Act_Refresh:      return Tr(StrId::MenuRefresh);
+    case Act_Copy:         return Tr(StrId::MenuCopy);
+    case Act_Paste:        return Tr(StrId::MenuPaste);
+    case Act_Save:         return Tr(StrId::MenuSave);
+    case Act_SaveAs:       return Tr(StrId::MenuSaveAs);
+    case Act_Delete:       return Tr(StrId::MenuDeleteImage);
+    case Act_Undo:         return Tr(StrId::ActNameUndo);
+    case Act_CenterImage:  return Tr(StrId::ActNameCenterImage);
+    case Act_CommitCrop:   return Tr(StrId::ActNameCommitCrop);
+    case Act_ToggleOSD:    return Tr(StrId::ActNameToggleOSD);
+    case Act_PlayPause:    return Tr(StrId::ActNamePlayPause);
+    case Act_ResumeAnim:   return Tr(StrId::ActNameResumeAnim);
+    case Act_AnimNext:     return Tr(StrId::ActNameNextFrame);
+    case Act_AnimPrev:     return Tr(StrId::ActNamePrevFrame);
+    case Act_AnimFirst:    return Tr(StrId::ActNameFirstFrame);
+    case Act_ContextMenu:  return Tr(StrId::ActNameContextMenu);
+    case Act_Slideshow:    return Tr(StrId::MenuToggleSlideshow);
+    default:               return L"";
+    }
+}
+
+static void LocalizeKeybindingsDialog(HWND hDlg) {
+    SetWindowTextW(hDlg, Tr(StrId::DlgKeybindingsTitle));
+    SetDlgItemTextW(hDlg, IDC_STATIC_KB_ACTION, Tr(StrId::KbAction));
+    SetDlgItemTextW(hDlg, IDC_STATIC_KB_SHORTCUT, Tr(StrId::KbShortcut));
+    SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnApply));
+    SetDlgItemTextW(hDlg, IDCANCEL, Tr(StrId::BtnClose));
+}
 
 INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     ViewerApp* pApp = GetAppFromDialog<ViewerApp>(hDlg, message, lParam);
@@ -214,9 +298,10 @@ INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARA
 
     switch (message) {
     case WM_INITDIALOG: {
+        LocalizeKeybindingsDialog(hDlg);
         HWND hCombo = GetDlgItem(hDlg, IDC_COMBO_ACTION);
         for (int i = 0; i < Act_Count; ++i) {
-            SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)ActionNames[i]);
+            SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)GetActionName(i));
         }
         SendMessageW(hCombo, CB_SETCURSEL, 0, 0);
         SendMessageW(GetDlgItem(hDlg, IDC_HOTKEY_CTRL), HKM_SETHOTKEY, ctx.hotkeys[0], 0);
@@ -244,7 +329,7 @@ INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARA
                 }
                 pApp->WriteSettings(ctx.settingsPath, ctx.windowPlacement, ctx.startFullScreen, ctx.enforceSingleInstance, ctx.alwaysOnTop);
 
-                SetDlgItemTextW(hDlg, IDOK, L"Applied!");
+                SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnApplied));
                 SetTimer(hDlg, KEYBINDING_TIMER_ID, 1500, nullptr);
             }
             return (INT_PTR)TRUE;
@@ -257,7 +342,7 @@ INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARA
     case WM_TIMER:
         if (wParam == KEYBINDING_TIMER_ID) {
             KillTimer(hDlg, KEYBINDING_TIMER_ID);
-            SetDlgItemTextW(hDlg, IDOK, L"Apply");
+            SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnApply));
         }
         return (INT_PTR)TRUE;
     }
@@ -273,6 +358,10 @@ INT_PTR CALLBACK ViewerApp::ZoomDialogProc(HWND hDlg, UINT message, WPARAM wPara
     if (!pApp) return (INT_PTR)FALSE;
 
     if (message == WM_INITDIALOG) {
+        SetWindowTextW(hDlg, Tr(StrId::DlgZoomTitle));
+        SetDlgItemTextW(hDlg, IDC_STATIC_ZOOM_LABEL, Tr(StrId::ZoomLabel));
+        SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnOk));
+        SetDlgItemTextW(hDlg, IDCANCEL, Tr(StrId::BtnCancel));
         // Default the text box to the current zoom level
         SetDlgItemInt(hDlg, IDC_EDIT_ZOOM, static_cast<UINT>(pApp->GetContext().zoomFactor * 100.0f + 0.5f), FALSE);
         return (INT_PTR)TRUE;
@@ -289,7 +378,7 @@ INT_PTR CALLBACK ViewerApp::ZoomDialogProc(HWND hDlg, UINT message, WPARAM wPara
                 EndDialog(hDlg, IDOK);
             }
             else {
-                MessageBoxW(hDlg, L"Please enter a valid positive percentage.", L"Invalid Input", MB_ICONERROR);
+                MessageBoxW(hDlg, Tr(StrId::ZoomInvalidMsg), Tr(StrId::InvalidInputCaption), MB_ICONERROR);
             }
             return (INT_PTR)TRUE;
         }

@@ -38,6 +38,7 @@
 using Microsoft::WRL::ComPtr;
 #include <wil/resource.h>
 #include "resource.h"
+#include "i18n.h"
 #include <compare>
 #include <ranges>
 
@@ -103,33 +104,33 @@ enum ActionID {
 class ImageProperties {
 public:
     std::wstring filePath;
-    std::wstring dimensions = L"N/A";
-    std::wstring fileSize = L"N/A";
-    std::wstring createdDate = L"N/A";
-    std::wstring modifiedDate = L"N/A";
-    std::wstring accessedDate = L"N/A";
+    std::wstring dimensions = Tr(StrId::PropNa);
+    std::wstring fileSize = Tr(StrId::PropNa);
+    std::wstring createdDate = Tr(StrId::PropNa);
+    std::wstring modifiedDate = Tr(StrId::PropNa);
+    std::wstring accessedDate = Tr(StrId::PropNa);
     std::wstring attributes;
-    std::wstring imageFormat = L"N/A";
-    std::wstring bitDepth = L"N/A";
-    std::wstring dpi = L"N/A";
-    std::wstring orientation = L"N/A";
-    std::wstring cameraMake = L"N/A";
-    std::wstring cameraModel = L"N/A";
-    std::wstring dateTaken = L"N/A";
-    std::wstring fStop = L"N/A";
-    std::wstring exposureTime = L"N/A";
-    std::wstring iso = L"N/A";
-    std::wstring software = L"N/A";
-    std::wstring focalLength = L"N/A";
-    std::wstring focalLength35mm = L"N/A";
-    std::wstring exposureBias = L"N/A";
-    std::wstring meteringMode = L"N/A";
-    std::wstring flash = L"N/A";
-    std::wstring exposureProgram = L"N/A";
-    std::wstring whiteBalance = L"N/A";
-    std::wstring author = L"N/A";
-    std::wstring copyright = L"N/A";
-    std::wstring lensModel = L"N/A";
+    std::wstring imageFormat = Tr(StrId::PropNa);
+    std::wstring bitDepth = Tr(StrId::PropNa);
+    std::wstring dpi = Tr(StrId::PropNa);
+    std::wstring orientation = Tr(StrId::PropNa);
+    std::wstring cameraMake = Tr(StrId::PropNa);
+    std::wstring cameraModel = Tr(StrId::PropNa);
+    std::wstring dateTaken = Tr(StrId::PropNa);
+    std::wstring fStop = Tr(StrId::PropNa);
+    std::wstring exposureTime = Tr(StrId::PropNa);
+    std::wstring iso = Tr(StrId::PropNa);
+    std::wstring software = Tr(StrId::PropNa);
+    std::wstring focalLength = Tr(StrId::PropNa);
+    std::wstring focalLength35mm = Tr(StrId::PropNa);
+    std::wstring exposureBias = Tr(StrId::PropNa);
+    std::wstring meteringMode = Tr(StrId::PropNa);
+    std::wstring flash = Tr(StrId::PropNa);
+    std::wstring exposureProgram = Tr(StrId::PropNa);
+    std::wstring whiteBalance = Tr(StrId::PropNa);
+    std::wstring author = Tr(StrId::PropNa);
+    std::wstring copyright = Tr(StrId::PropNa);
+    std::wstring lensModel = Tr(StrId::PropNa);
 };
 
 // Skip zero-initialization

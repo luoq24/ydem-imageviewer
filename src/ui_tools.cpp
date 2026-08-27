@@ -3,19 +3,28 @@
 #include <format>
 
 void ViewerApp::UpdateWindowTitle() {
-    const std::wstring appNameAndVersion = L"Minimal Image Viewer v2.0.3";
-
     if (m_ctx.loadingFilePath.empty()) {
-        SetWindowTextW(m_ctx.hWnd, appNameAndVersion.c_str());
+        SetWindowTextW(m_ctx.hWnd, AppNameAndVersion());
         return;
     }
 
-    std::wstring title = m_ctx.loadingFilePath;
+    // 剪贴板图像在内部以固定英文标记存储，显示时翻译
+    std::wstring displayPath = m_ctx.loadingFilePath;
+    if (displayPath == L"Clipboard Image") {
+        displayPath = Tr(StrId::ClipboardImage);
+    }
+
+    std::wstring title;
+    LPCWSTR appTitle = AppNameAndVersion();
     if (m_ctx.animationFrameDelays.size() > 1) {
-        title = std::format(L"{} (Frame {}/{}) - {}", m_ctx.loadingFilePath, m_ctx.currentAnimationFrame + 1, m_ctx.animationFrameDelays.size(), appNameAndVersion);
+        UINT frameNumber = m_ctx.currentAnimationFrame + 1;
+        size_t frameCount = m_ctx.animationFrameDelays.size();
+        title = std::vformat(Tr(StrId::TitleFrameFormat),
+            std::make_wformat_args(displayPath, frameNumber, frameCount, appTitle));
     }
     else {
-        title = std::format(L"{} - {}", m_ctx.loadingFilePath, appNameAndVersion);
+        title = std::vformat(Tr(StrId::TitleSimpleFormat),
+            std::make_wformat_args(displayPath, appTitle));
     }
     SetWindowTextW(m_ctx.hWnd, title.c_str());
 }

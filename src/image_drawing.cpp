@@ -87,7 +87,7 @@ void ViewerApp::CreateDeviceResources() {
         }
         if (SUCCEEDED(hr)) {
             float dpiScale = GetDpiForWindow(m_ctx.hWnd) / 96.0f;
-            hr = m_ctx.writeFactory->CreateTextFormat(L"Segoe UI", NULL, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f * dpiScale, L"en-us", &m_ctx.textFormat);
+            hr = m_ctx.writeFactory->CreateTextFormat(L"Segoe UI", NULL, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f * dpiScale, I18n::DWriteLocale(), &m_ctx.textFormat);
         }
         if (SUCCEEDED(hr)) {
             m_ctx.textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
@@ -153,16 +153,16 @@ void ViewerApp::DrawOsdOverlay(ID2D1DeviceContext* renderTarget) {
         }
 
         std::wstring osdText;
-        osdText += L"Image Format: " + props.imageFormat + L"\n";
-        osdText += L"Dimensions: " + props.dimensions + L"   Orientation: " + props.orientation + L"\n";
-        osdText += L"Bit Depth: " + props.bitDepth + L"\n";
-        osdText += L"DPI: " + props.dpi + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdImageFormat)) + props.imageFormat + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdDimensions)) + props.dimensions + L"   " + Tr(StrId::OsdOrientation) + props.orientation + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdBitDepth)) + props.bitDepth + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdDpi)) + props.dpi + L"\n";
         osdText += L"\n";
-        osdText += L"File Size: " + props.fileSize + L"\n";
-        osdText += L"Attributes: " + props.attributes + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdFileSize)) + props.fileSize + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdAttributes)) + props.attributes + L"\n";
         osdText += L"\n";
-        osdText += L"F-stop: " + props.fStop + L"  Exposure: " + props.exposureTime + L"  ISO: " + props.iso + L"\n";
-        osdText += L"Author: " + props.author + L"  Software: " + props.software + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdFStop)) + props.fStop + L"  " + Tr(StrId::OsdExposure) + props.exposureTime + L"  " + Tr(StrId::OsdIso) + props.iso + L"\n";
+        osdText += std::wstring(Tr(StrId::OsdAuthor)) + props.author + L"  " + Tr(StrId::OsdSoftware) + props.software + L"\n";
 
         m_ctx.cachedOsdText = osdText;
         m_ctx.isOsdCacheValid = true;
@@ -250,8 +250,8 @@ void ViewerApp::Render() {
         m_ctx.textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
         m_ctx.textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
         m_ctx.renderTarget->DrawTextW(
-            L"Loading...",
-            10,
+            Tr(StrId::DrawLoading),
+            lstrlenW(Tr(StrId::DrawLoading)),
             m_ctx.textFormat.Get(),
             layoutRect,
             m_ctx.textBrush.Get()
@@ -469,8 +469,8 @@ void ViewerApp::Render() {
             m_ctx.textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
             m_ctx.textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
             m_ctx.renderTarget->DrawTextW(
-                L"Right-click for options or drag an image here",
-                46,
+                Tr(StrId::DrawEmpty),
+                lstrlenW(Tr(StrId::DrawEmpty)),
                 m_ctx.textFormat.Get(),
                 layoutRect,
                 m_ctx.textBrush.Get()
@@ -531,8 +531,8 @@ void ViewerApp::Render() {
             m_ctx.textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
             m_ctx.textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
             m_ctx.renderTarget->DrawTextW(
-                L"Press Enter to apply crop, Esc to cancel",
-                40,
+                Tr(StrId::DrawCropHint),
+                lstrlenW(Tr(StrId::DrawCropHint)),
                 m_ctx.textFormat.Get(),
                 layoutRect,
                 m_ctx.textBrush.Get()
