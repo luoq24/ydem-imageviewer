@@ -68,3 +68,16 @@ windowsstore/
 # OS Generated files 
 .DS_Store
 Thumbs.db
+
+# ===========================
+# Local Build Artifacts
+# ===========================
+
+# Build logs
+*.log
+
+# NuGet package extraction metadata (nupkg internals, not needed for build)
+packages/**/[Content_Types].xml
+packages/**/_rels/
+packages/**/package/
+packages/**/*.nuspec
