@@ -1,8 +1,8 @@
 #include <windows.h>
 #include "resource.h"
 
-// Application icon
-IDI_APPICON ICON "app.ico"
+// Application icon (PNG embedded as raw data, converted to HICON at runtime)
+IDI_APPICON RCDATA "app_icon.png"
 
 // Resize Dialog
 IDD_RESIZE_DIALOG DIALOGEX 0, 0, 230, 95

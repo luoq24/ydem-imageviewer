@@ -72,7 +72,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="app.ico">
+    <Image Include="app_icon.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

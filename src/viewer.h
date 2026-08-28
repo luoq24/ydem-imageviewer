@@ -169,6 +169,7 @@ struct FastByteBuffer {
 struct AppContext {
     HINSTANCE hInst = nullptr;
     HWND hWnd = nullptr;
+    wil::unique_hicon appIcon = nullptr;
     ComPtr<IWICImagingFactory> wicFactory = nullptr;
     ComPtr<ID2D1Factory1> d2dFactory = nullptr;
     ComPtr<IDWriteFactory> writeFactory = nullptr;
@@ -402,6 +403,7 @@ public:
     void ConvertWindowToImagePoint(POINT pt, float& localX, float& localY);
     void ConvertImageToWindowPoint(float localX, float localY, POINT& pt);
     void UpdateTitleBarTheme(HWND hWnd, BackgroundColor bgColor);
+    HICON CreateAppIconFromPng();
     void ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool& fullscreen, bool& singleInstance, bool& alwaysOnTop);
     void WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& wp, bool fullscreen, bool singleInstance, bool alwaysOnTop);
     void ResetHotkeysToDefault();

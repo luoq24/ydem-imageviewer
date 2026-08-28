@@ -39,7 +39,7 @@
     <ClInclude Include="viewer.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="app.ico" />
+    <Image Include="app_icon.png" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

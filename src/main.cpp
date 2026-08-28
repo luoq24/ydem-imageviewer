@@ -1,4 +1,5 @@
 #include "viewer.h"
+#include <cstring>
 
 // define dark mode for older Windows
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
@@ -32,6 +33,76 @@ void ViewerApp::UpdateTitleBarTheme(HWND hWnd, BackgroundColor bgColor) {
     // black/grey background triggers dark mode
     BOOL useDarkMode = (bgColor == BackgroundColor::Black || bgColor == BackgroundColor::Grey) ? TRUE : FALSE;
     DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+}
+
+HICON ViewerApp::CreateAppIconFromPng() {
+    // The PNG is embedded as an RCDATA resource (rc.exe cannot compile PNG as an ICON resource)
+    HRSRC hRes = FindResourceW(m_ctx.hInst, MAKEINTRESOURCE(IDI_APPICON), RT_RCDATA);
+    if (!hRes) return nullptr;
+    HGLOBAL hGlobal = LoadResource(m_ctx.hInst, hRes);
+    if (!hGlobal) return nullptr;
+    const BYTE* pData = static_cast<const BYTE*>(LockResource(hGlobal));
+    DWORD dataSize = SizeofResource(m_ctx.hInst, hRes);
+    if (!pData || dataSize == 0) return nullptr;
+
+    ComPtr<IWICStream> stream;
+    if (FAILED(m_ctx.wicFactory->CreateStream(&stream))) return nullptr;
+    if (FAILED(stream->InitializeFromMemory(const_cast<BYTE*>(pData), dataSize))) return nullptr;
+
+    ComPtr<IWICBitmapDecoder> decoder;
+    if (FAILED(m_ctx.wicFactory->CreateDecoderFromStream(stream.Get(), nullptr, WICDecodeMetadataCacheOnLoad, &decoder))) return nullptr;
+
+    ComPtr<IWICBitmapFrameDecode> frame;
+    if (FAILED(decoder->GetFrame(0, &frame))) return nullptr;
+
+    ComPtr<IWICFormatConverter> converter;
+    if (FAILED(m_ctx.wicFactory->CreateFormatConverter(&converter))) return nullptr;
+    if (FAILED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom))) return nullptr;
+
+    UINT width = 0, height = 0;
+    if (FAILED(converter->GetSize(&width, &height)) || width == 0 || height == 0) return nullptr;
+
+    std::vector<BYTE> pixels(static_cast<size_t>(width) * height * 4);
+    WICRect rc = { 0, 0, static_cast<INT>(width), static_cast<INT>(height) };
+    if (FAILED(converter->CopyPixels(&rc, width * 4, static_cast<UINT>(pixels.size()), pixels.data()))) return nullptr;
+
+    // Build a 32bpp top-down DIB section and copy the BGRA pixels in
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = static_cast<LONG>(width);
+    bmi.bmiHeader.biHeight = -static_cast<LONG>(height); // top-down
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    HDC hdc = GetDC(nullptr);
+    void* pBits = nullptr;
+    HBITMAP hbmColor = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
+    ReleaseDC(nullptr, hdc);
+    if (!hbmColor || !pBits) {
+        if (hbmColor) DeleteObject(hbmColor);
+        return nullptr;
+    }
+    memcpy(pBits, pixels.data(), pixels.size());
+
+    // All-zero monochrome mask: transparency is driven by the bitmap's alpha channel
+    DWORD maskRowBytes = ((width + 31) / 32) * 4;
+    std::vector<BYTE> maskBits(maskRowBytes * height, 0);
+    HBITMAP hbmMask = CreateBitmap(width, height, 1, 1, maskBits.data());
+    if (!hbmMask) {
+        DeleteObject(hbmColor);
+        return nullptr;
+    }
+
+    ICONINFO ii = {};
+    ii.fIcon = TRUE;
+    ii.hbmColor = hbmColor;
+    ii.hbmMask = hbmMask;
+    HICON hIcon = CreateIconIndirect(&ii);
+
+    DeleteObject(hbmColor);
+    DeleteObject(hbmMask);
+    return hIcon;
 }
 
 int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
@@ -120,7 +191,9 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
     wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
     wcex.lpfnWndProc = ViewerApp::StaticWndProc;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
+    m_ctx.appIcon.reset(CreateAppIconFromPng());
+    wcex.hIcon = m_ctx.appIcon.get();
+    wcex.hIconSm = m_ctx.appIcon.get();
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszClassName = L"MinimalImageViewer";
