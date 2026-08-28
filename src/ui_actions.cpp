@@ -1,8 +1,6 @@
 #include "viewer.h"
 #include <format>
 
-
-
 void ViewerApp::OpenFileAction() {
     wchar_t szFile[MAX_PATH] = { 0 };
     OPENFILENAMEW ofn = { sizeof(OPENFILENAMEW) };
@@ -186,4 +184,135 @@ void ViewerApp::OpenFileLocationAction() {
         SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
         ILFree(pidl);
     }
+}
+
+// 核心功能1：根据当前图片的长宽比，将窗口移动到合适的显示器上
+// （典型场景：1 个横屏显示器 + 1 个竖屏显示器）
+void ViewerApp::ApplyMonitorPlacement() {
+    if (!m_ctx.autoMonitorPlacement) return;
+    // 最小化时不移动（最大化/全屏会特殊处理，见下）
+    if (IsIconic(m_ctx.hWnd)) return;
+
+    UINT imgW = m_ctx.originalWidth;
+    UINT imgH = m_ctx.originalHeight;
+    if (imgW == 0 || imgH == 0) return;
+
+    // 考虑 EXIF 自动旋转：90°/270° 时横竖互换
+    if (m_ctx.rotationAngle == 90 || m_ctx.rotationAngle == 270) {
+        std::swap(imgW, imgH);
+    }
+
+    enum class Orient { Landscape, Portrait, Square };
+    auto orientOfSize = [](int w, int h) {
+        return (w > h) ? Orient::Landscape : (h > w) ? Orient::Portrait : Orient::Square;
+    };
+    Orient imgOrient = orientOfSize(static_cast<int>(imgW), static_cast<int>(imgH));
+    if (imgOrient == Orient::Square) return; // 正方形图片不切换
+
+    // 收集所有显示器（虚拟屏幕坐标）
+    struct MonRect { RECT rc; };
+    std::vector<MonRect> monitors;
+    EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR, HDC, LPRECT rc, LPARAM lParam) -> BOOL {
+        auto* vec = reinterpret_cast<std::vector<MonRect>*>(lParam);
+        vec->push_back(MonRect{ *rc });
+        return TRUE;
+        }, reinterpret_cast<LPARAM>(&monitors));
+    if (monitors.empty()) return;
+
+    auto orientOfRect = [&](const RECT& rc) {
+        return orientOfSize(rc.right - rc.left, rc.bottom - rc.top);
+    };
+
+    RECT winRect;
+    GetWindowRect(m_ctx.hWnd, &winRect);
+    int winW = winRect.right - winRect.left;
+    int winH = winRect.bottom - winRect.top;
+
+    // 若当前所在显示器方向已匹配，则不移动
+    HMONITOR curMon = MonitorFromWindow(m_ctx.hWnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO mi{ sizeof(mi) };
+    if (!GetMonitorInfoW(curMon, &mi)) return; // 无法确定当前显示器，保持原位
+    if (orientOfRect(mi.rcMonitor) == imgOrient) return;
+
+    // 在方向匹配的显示器中，选择距当前窗口中心最近的一块
+    POINT winCenter = { winRect.left + winW / 2, winRect.top + winH / 2 };
+    const RECT* best = nullptr;
+    int bestDist = INT_MAX;
+    for (const auto& m : monitors) {
+        if (orientOfRect(m.rc) != imgOrient) continue;
+        int cx = m.rc.left + (m.rc.right - m.rc.left) / 2;
+        int cy = m.rc.top + (m.rc.bottom - m.rc.top) / 2;
+        int dx = cx - winCenter.x;
+        int dy = cy - winCenter.y;
+        int dist = dx * dx + dy * dy;
+        if (dist < bestDist) {
+            bestDist = dist;
+            best = &m.rc;
+        }
+    }
+    if (!best) return; // 没有匹配方向的显示器，保持原位
+
+    if (m_ctx.isFullScreen) {
+        // 全屏状态：保持全屏，直接铺满目标显示器
+        m_ctx.suppressDpiResize = true;
+        SetWindowPos(m_ctx.hWnd, nullptr,
+            best->left, best->top,
+            best->right - best->left, best->bottom - best->top,
+            SWP_NOZORDER | SWP_NOACTIVATE);
+        m_ctx.suppressDpiResize = false;
+        return;
+    }
+
+    // 将矩形从当前显示器“等比映射”到目标显示器：
+    // 中心点相对当前显示器的横向/纵向百分比（m%、n%）保持不变；
+    // 宽/高相对当前显示器的百分比保持不变。
+    auto remapTo = [&](const RECT& src, const RECT& dst) {
+        int srcW = src.right - src.left;
+        int srcH = src.bottom - src.top;
+        int curMonW = mi.rcMonitor.right - mi.rcMonitor.left;
+        int curMonH = mi.rcMonitor.bottom - mi.rcMonitor.top;
+        int dstMonW = dst.right - dst.left;
+        int dstMonH = dst.bottom - dst.top;
+
+        double centerRatioX = curMonW > 0 ? (double)((src.left + src.right) / 2 - mi.rcMonitor.left) / curMonW : 0.0;
+        double centerRatioY = curMonH > 0 ? (double)((src.top + src.bottom) / 2 - mi.rcMonitor.top) / curMonH : 0.0;
+        double sizeRatioW = curMonW > 0 ? (double)srcW / curMonW : 1.0;
+        double sizeRatioH = curMonH > 0 ? (double)srcH / curMonH : 1.0;
+
+        int newW = std::max(1, (int)std::lround(sizeRatioW * dstMonW));
+        int newH = std::max(1, (int)std::lround(sizeRatioH * dstMonH));
+        int newCX = dst.left + (int)std::lround(centerRatioX * dstMonW);
+        int newCY = dst.top + (int)std::lround(centerRatioY * dstMonH);
+
+        RECT out;
+        out.left = newCX - newW / 2;
+        out.top = newCY - newH / 2;
+        out.right = out.left + newW;
+        out.bottom = out.top + newH;
+        return out;
+    };
+
+    if (IsZoomed(m_ctx.hWnd)) {
+        // 最大化状态：先把“还原位置”按比例映射到目标显示器，还原后再重新最大化。
+        // 注意：对已最大化的窗口直接 SetWindowPlacement(SW_SHOWMAXIMIZED) 不会重新定位，
+        // 必须先还原到新位置，再重新最大化。
+        WINDOWPLACEMENT wp{ sizeof(WINDOWPLACEMENT) };
+        GetWindowPlacement(m_ctx.hWnd, &wp);
+        wp.rcNormalPosition = remapTo(wp.rcNormalPosition, *best);
+        wp.showCmd = SW_RESTORE;
+        m_ctx.suppressDpiResize = true;
+        SetWindowPlacement(m_ctx.hWnd, &wp);
+        ShowWindow(m_ctx.hWnd, SW_MAXIMIZE);
+        m_ctx.suppressDpiResize = false;
+        return;
+    }
+
+    // 窗口化状态：按比例映射位置与大小
+    RECT mapped = remapTo(winRect, *best);
+    m_ctx.suppressDpiResize = true;
+    SetWindowPos(m_ctx.hWnd, nullptr,
+        mapped.left, mapped.top,
+        mapped.right - mapped.left, mapped.bottom - mapped.top,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+    m_ctx.suppressDpiResize = false;
 }

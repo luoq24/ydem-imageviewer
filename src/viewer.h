@@ -206,6 +206,8 @@ struct AppContext {
     bool startFullScreen = false;
     bool enforceSingleInstance = true;
     bool alwaysOnTop = false;
+    bool autoMonitorPlacement = false; // 核心功能1：根据图片横竖方向自动将窗口移到匹配的显示器
+    bool suppressDpiResize = false;    // 自动切屏期间禁止 WM_DPICHANGED 覆盖窗口尺寸
     bool isDraggingImage = false;
     std::wstring settingsPath;
     std::wstring currentDirectory;
@@ -395,6 +397,7 @@ public:
     void RotateImage(bool clockwise);
     void FlipImage();
     bool GetCurrentImageSize(UINT* width, UINT* height);
+    void ApplyMonitorPlacement(); // 核心功能1：根据图片方向移动到合适显示器
     ImageProperties GetCurrentOsdProperties();
     void ConvertWindowToImagePoint(POINT pt, float& localX, float& localY);
     void ConvertImageToWindowPoint(float localX, float localY, POINT& pt);

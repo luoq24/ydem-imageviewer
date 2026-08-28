@@ -440,11 +440,15 @@ LRESULT ViewerApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         break;
     case WM_DPICHANGED: {
         RECT* prcNewWindow = reinterpret_cast<RECT*>(lParam);
-        SetWindowPos(hWnd, nullptr,
-            prcNewWindow->left, prcNewWindow->top,
-            prcNewWindow->right - prcNewWindow->left,
-            prcNewWindow->bottom - prcNewWindow->top,
-            SWP_NOZORDER | SWP_NOACTIVATE);
+        // 核心功能1：自动切屏期间由 ApplyMonitorPlacement 统一设置目标尺寸，
+        // 不让系统按 DPI 比例缩放覆盖（两个显示器 DPI 不同会破坏百分比尺寸）
+        if (!m_ctx.suppressDpiResize) {
+            SetWindowPos(hWnd, nullptr,
+                prcNewWindow->left, prcNewWindow->top,
+                prcNewWindow->right - prcNewWindow->left,
+                prcNewWindow->bottom - prcNewWindow->top,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+        }
 
         // Update the DPI-dependent text format instead of dropping all device resources
         if (m_ctx.writeFactory) {

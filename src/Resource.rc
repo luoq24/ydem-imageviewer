@@ -48,7 +48,7 @@ PUSHBUTTON      "Close", IDCANCEL, 190, 75, 50, 14
 END
 
 // Preferences Dialog
-IDD_PREFERENCES_DIALOG DIALOGEX 0, 0, 250, 375
+IDD_PREFERENCES_DIALOG DIALOGEX 0, 0, 250, 390
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Preferences"
 FONT 9, "Segoe UI"
@@ -59,7 +59,7 @@ CONTROL                 "Black", IDC_RADIO_BG_BLACK, "Button", BS_AUTORADIOBUTTO
 CONTROL                 "White", IDC_RADIO_BG_WHITE, "Button", BS_AUTORADIOBUTTON, 130, 25, 100, 10
 CONTROL                 "Transparent", IDC_RADIO_BG_TRANSPARENT, "Button", BS_AUTORADIOBUTTON, 130, 40, 100, 10
 
-GROUPBOX                "Application Settings", IDC_STATIC_APP_GROUP, 10, 85, 230, 155
+GROUPBOX                "Application Settings", IDC_STATIC_APP_GROUP, 10, 85, 230, 170
 CONTROL                 "Always on Top", IDC_CHECK_ALWAYS_ON_TOP, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 100, 210, 10
 CONTROL                 "Start in full screen", IDC_CHECK_START_FULLSCREEN, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 115, 210, 10
 CONTROL                 "Enforce single instance", IDC_CHECK_SINGLE_INSTANCE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 130, 210, 10
@@ -69,17 +69,18 @@ CONTROL                 "Enable Image Fade Animation", IDC_CHECK_FADE_ANIMATION,
 CONTROL                 "Show Image Info Overlay (OSD)", IDC_CHECK_SHOW_OSD, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 190, 210, 10
 CONTROL                 "Ask before deleting", IDC_CHECK_ASK_DELETE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 205, 210, 10
 CONTROL                 "Preserve zoom on resize/fullscreen", IDC_CHECK_PRESERVE_ZOOM, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 220, 210, 10
+CONTROL                 "Auto-move window to matching display", IDC_CHECK_AUTO_MONITOR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 235, 210, 10
 
-GROUPBOX                "Default Zoom Mode", IDC_STATIC_ZOOM_GROUP, 10, 250, 230, 45
-CONTROL                 "Fit to Window", IDC_RADIO_ZOOM_FIT, "Button", BS_AUTORADIOBUTTON | WS_GROUP, 20, 265, 100, 10
-CONTROL                 "Actual Size (100%)", IDC_RADIO_ZOOM_ACTUAL, "Button", BS_AUTORADIOBUTTON, 130, 265, 100, 10
+GROUPBOX                "Default Zoom Mode", IDC_STATIC_ZOOM_GROUP, 10, 262, 230, 45
+CONTROL                 "Fit to Window", IDC_RADIO_ZOOM_FIT, "Button", BS_AUTORADIOBUTTON | WS_GROUP, 20, 277, 100, 10
+CONTROL                 "Actual Size (100%)", IDC_RADIO_ZOOM_ACTUAL, "Button", BS_AUTORADIOBUTTON, 130, 277, 100, 10
 
-GROUPBOX                "Language", IDC_STATIC_LANG_GROUP, 10, 300, 230, 45
-CONTROL                 "Chinese (Simplified)", IDC_RADIO_LANG_ZH, "Button", BS_AUTORADIOBUTTON | WS_GROUP, 20, 315, 100, 10
-CONTROL                 "English", IDC_RADIO_LANG_EN, "Button", BS_AUTORADIOBUTTON, 130, 315, 100, 10
+GROUPBOX                "Language", IDC_STATIC_LANG_GROUP, 10, 314, 230, 45
+CONTROL                 "Chinese (Simplified)", IDC_RADIO_LANG_ZH, "Button", BS_AUTORADIOBUTTON | WS_GROUP, 20, 329, 100, 10
+CONTROL                 "English", IDC_RADIO_LANG_EN, "Button", BS_AUTORADIOBUTTON, 130, 329, 100, 10
 
-DEFPUSHBUTTON           "OK", IDOK, 138, 353, 50, 14
-PUSHBUTTON              "Cancel", IDCANCEL, 190, 353, 50, 14
+DEFPUSHBUTTON           "OK", IDOK, 138, 368, 50, 14
+PUSHBUTTON              "Cancel", IDCANCEL, 190, 368, 50, 14
 END
 
 //

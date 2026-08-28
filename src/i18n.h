@@ -35,7 +35,7 @@ enum class StrId {
     // 首选项对话框
     DlgPreferencesTitle, PrefBgGroup, PrefBgGrey, PrefBgBlack, PrefBgWhite, PrefBgTransparent,
     PrefAppGroup, PrefAlwaysOnTop, PrefStartFullscreen, PrefSingleInstance, PrefAutoRefresh, PrefSmoothScaling,
-    PrefFadeAnimation, PrefShowOsd, PrefAskDelete, PrefPreserveZoom,
+    PrefFadeAnimation, PrefShowOsd, PrefAskDelete, PrefPreserveZoom, PrefAutoMonitorPlacement,
     PrefZoomGroup, PrefZoomFit, PrefZoomActual, PrefLanguageGroup, PrefLangZh, PrefLangEn,
     // 快捷键 / 自定义缩放 / 调整大小对话框
     DlgKeybindingsTitle, KbAction, KbShortcut, BtnOk, BtnCancel, BtnApply, BtnApplied, BtnClose,

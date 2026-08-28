@@ -929,6 +929,9 @@ void ViewerApp::OnImageReady(bool success, int seqId) {
             }
         }
 
+        // 核心功能1：根据图片横竖方向将窗口移动到合适的显示器
+        ApplyMonitorPlacement();
+
         if (m_ctx.enableFadeAnimation) {
             m_ctx.isFading = true;
             m_ctx.fadeStartTime = GetTickCount64();

@@ -78,6 +78,7 @@
 #define IDC_CHECK_SHOW_OSD          2030
 #define IDC_CHECK_ASK_DELETE        2031
 #define IDC_CHECK_PRESERVE_ZOOM     2032
+#define IDC_CHECK_AUTO_MONITOR      2042
 #define IDC_STATIC_LANG_GROUP       2033
 #define IDC_RADIO_LANG_ZH           2034
 #define IDC_RADIO_LANG_EN           2035

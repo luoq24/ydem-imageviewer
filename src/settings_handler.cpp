@@ -38,6 +38,7 @@ void ViewerApp::ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool
     fullscreen = getInt(L"Settings", L"StartFullScreen", 0) == 1;
     singleInstance = getInt(L"Settings", L"EnforceSingleInstance", 1) == 1;
     m_ctx.alwaysOnTop = getInt(L"Settings", L"AlwaysOnTop", 0) == 1;
+    m_ctx.autoMonitorPlacement = getInt(L"Settings", L"AutoMonitorPlacement", 0) == 1;
     m_ctx.smoothScaling = getInt(L"Settings", L"SmoothScaling", 1) == 1;
     m_ctx.enableFadeAnimation = getInt(L"Settings", L"EnableFadeAnimation", 1) == 1;
     m_ctx.isOsdVisible = getInt(L"Settings", L"ShowOSD", 0) == 1;
@@ -90,6 +91,7 @@ void ViewerApp::WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& w
     writeInt(L"Settings", L"Language", I18n::GetLanguage() == AppLanguage::English ? 1 : 0);
     writeInt(L"Settings", L"EnforceSingleInstance", singleInstance ? 1 : 0);
     writeInt(L"Settings", L"AlwaysOnTop", alwaysOnTop ? 1 : 0);
+    writeInt(L"Settings", L"AutoMonitorPlacement", m_ctx.autoMonitorPlacement ? 1 : 0);
     writeInt(L"Settings", L"SmoothScaling", m_ctx.smoothScaling ? 1 : 0);
     writeInt(L"Settings", L"EnableFadeAnimation", m_ctx.enableFadeAnimation ? 1 : 0);
     writeInt(L"Settings", L"ShowOSD", m_ctx.isOsdVisible ? 1 : 0);
