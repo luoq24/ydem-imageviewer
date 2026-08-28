@@ -32,8 +32,7 @@ void ViewerApp::HandleCommand(WORD cmd) {
             LoadImageFromFile(currentFile);
         }
         break;
-    case IDM_COPY:          HandleCopy(); break;
-    case IDM_PASTE:         HandlePaste(); break;
+    case IDM_COPY_PATH:     HandleCopyPath(); break;
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
             size_t size = m_ctx.imageFiles.size();
@@ -93,7 +92,6 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_ZOOM_300:      SetZoomLevel(3.0f); break;
     case IDM_FIT_TO_WINDOW: FitImageToWindow(); break;
     case IDM_FULLSCREEN:    ToggleFullScreen(); break;
-    case IDM_DELETE_IMG:    DeleteCurrentImage(); break;
     case IDM_EXIT:
         if (m_ctx.isCropMode || m_ctx.isSelectingCropRect || m_ctx.isCropPending) {
             bool wasCropActive = m_ctx.isCropActive;
@@ -114,21 +112,6 @@ void ViewerApp::HandleCommand(WORD cmd) {
             SendMessage(m_ctx.hWnd, WM_CLOSE, 0, 0);
         }
         break;
-    case IDM_ROTATE_CW:     RotateImage(true); break;
-    case IDM_ROTATE_CCW:    RotateImage(false); break;
-    case IDM_FLIP:          FlipImage(); break;
-    case IDM_CROP: {
-        bool wasCropActive = m_ctx.isCropActive;
-        m_ctx.isCropMode = !m_ctx.isCropMode;
-        m_ctx.isCropActive = false; m_ctx.isCropPending = false; m_ctx.isSelectingCropRect = false;
-        if (wasCropActive) { ApplyEffectsToView(); FitImageToWindow(); }
-        InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
-        SetCursor(LoadCursor(nullptr, m_ctx.isCropMode ? IDC_CROSS : IDC_ARROW));
-        break;
-    }
-    case IDM_RESIZE:        ResizeImageAction(); break;
-    case IDM_SAVE:          SaveImage(); break;
-    case IDM_SAVE_AS:       SaveImageAs(); break;
     case IDM_OPEN_LOCATION: OpenFileLocationAction(); break;
     case IDM_PROPERTIES:    ShowImageProperties(); break;
     case IDM_SLIDESHOW:
@@ -259,15 +242,18 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
         AppendMenuW(menu, MF_STRING, id, label.c_str());
         };
 
-    AppendMenuW(hMenu, MF_STRING, IDM_OPEN, (std::wstring(Tr(StrId::MenuOpenImage)) + L"\tCtrl+O").c_str());
-    AppendMenuW(hMenu, MF_STRING, IDM_REFRESH, (std::wstring(Tr(StrId::MenuRefresh)) + L"\tF5").c_str());
+    UINT copyPathFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, copyPathFlags, IDM_COPY_PATH, Tr(StrId::MenuCopyPath));
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenu, MF_STRING, IDM_COPY, (std::wstring(Tr(StrId::MenuCopy)) + L"\tCtrl+C").c_str());
-    AppendMenuW(hMenu, MF_STRING, IDM_PASTE, (std::wstring(Tr(StrId::MenuPaste)) + L"\tCtrl+V").c_str());
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    addAction(hMenu, IDM_NEXT_IMG, Act_Next, Tr(StrId::MenuNextImage));
-    addAction(hMenu, IDM_PREV_IMG, Act_Prev, Tr(StrId::MenuPrevImage));
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+
+    HMENU hNativeMenu = CreatePopupMenu();
+
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_OPEN, (std::wstring(Tr(StrId::MenuOpenImage)) + L"\tCtrl+O").c_str());
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_REFRESH, (std::wstring(Tr(StrId::MenuRefresh)) + L"\tF5").c_str());
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
+    addAction(hNativeMenu, IDM_NEXT_IMG, Act_Next, Tr(StrId::MenuNextImage));
+    addAction(hNativeMenu, IDM_PREV_IMG, Act_Prev, Tr(StrId::MenuPrevImage));
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
 
     HMENU hSortMenu = CreatePopupMenu();
     auto addSortItem = [&](UINT id, SortCriteria crit, bool asc, LPCWSTR text) {
@@ -280,16 +266,8 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     addSortItem(IDM_SORT_BY_DATE_DESC, SortCriteria::ByDateModified, false, Tr(StrId::MenuSortDateDesc));
     addSortItem(IDM_SORT_BY_SIZE_ASC, SortCriteria::ByFileSize, true, Tr(StrId::MenuSortSizeAsc));
     addSortItem(IDM_SORT_BY_SIZE_DESC, SortCriteria::ByFileSize, false, Tr(StrId::MenuSortSizeDesc));
-    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hSortMenu, Tr(StrId::MenuSortBy));
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-
-    HMENU hEditMenu = CreatePopupMenu();
-    addAction(hEditMenu, IDM_ROTATE_CW, Act_RotateCW, Tr(StrId::MenuRotateCW));
-    addAction(hEditMenu, IDM_ROTATE_CCW, Act_RotateCCW, Tr(StrId::MenuRotateCCW));
-    addAction(hEditMenu, IDM_FLIP, Act_Flip, Tr(StrId::MenuFlip));
-    addAction(hEditMenu, IDM_CROP, Act_Crop, Tr(StrId::MenuCrop));
-    AppendMenuW(hEditMenu, MF_STRING, IDM_RESIZE, Tr(StrId::MenuResizeImage));
-    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hEditMenu, Tr(StrId::MenuEdit));
+    AppendMenuW(hNativeMenu, MF_POPUP, (UINT_PTR)hSortMenu, Tr(StrId::MenuSortBy));
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
 
     HMENU hViewMenu = CreatePopupMenu();
     addAction(hViewMenu, IDM_ZOOM_IN, Act_ZoomIn, Tr(StrId::MenuZoomIn));
@@ -301,24 +279,19 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     AppendMenuW(hViewMenu, MF_SEPARATOR, 0, nullptr);
     addAction(hViewMenu, IDM_FULLSCREEN, Act_Fullscreen, Tr(StrId::MenuFullScreen));
     addAction(hViewMenu, IDM_SLIDESHOW, Act_Slideshow, Tr(StrId::MenuToggleSlideshow));
-    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hViewMenu, Tr(StrId::MenuView));
-
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenu, MF_STRING, IDM_SAVE, (std::wstring(Tr(StrId::MenuSave)) + L"\tCtrl+S").c_str());
-    AppendMenuW(hMenu, MF_STRING, IDM_SAVE_AS, (std::wstring(Tr(StrId::MenuSaveAs)) + L"\tCtrl+Shift+S").c_str());
+    AppendMenuW(hNativeMenu, MF_POPUP, (UINT_PTR)hViewMenu, Tr(StrId::MenuView));
 
     UINT locationFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
-    AppendMenuW(hMenu, locationFlags, IDM_OPEN_LOCATION, Tr(StrId::MenuOpenLocation));
-    AppendMenuW(hMenu, locationFlags, IDM_PROPERTIES, Tr(StrId::MenuProperties));
+    AppendMenuW(hNativeMenu, locationFlags, IDM_OPEN_LOCATION, Tr(StrId::MenuOpenLocation));
+    AppendMenuW(hNativeMenu, locationFlags, IDM_PROPERTIES, Tr(StrId::MenuProperties));
 
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenu, MF_STRING, IDM_PREFERENCES, Tr(StrId::MenuPreferences));
-    AppendMenuW(hMenu, MF_STRING, IDM_KEYBINDINGS, Tr(StrId::MenuKeybindings));
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_PREFERENCES, Tr(StrId::MenuPreferences));
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_KEYBINDINGS, Tr(StrId::MenuKeybindings));
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_EXIT, (std::wstring(Tr(StrId::MenuExit)) + L"\tEsc").c_str());
 
-    AppendMenuW(hMenu, MF_STRING, IDM_DELETE_IMG, (std::wstring(Tr(StrId::MenuDeleteImage)) + L"\tDelete").c_str());
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenu, MF_STRING, IDM_EXIT, (std::wstring(Tr(StrId::MenuExit)) + L"\tEsc").c_str());
+    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hNativeMenu, Tr(StrId::MenuNative));
 
     if (m_ctx.isSlideshowActive) {
         CheckMenuItem(hMenu, IDM_SLIDESHOW, MF_BYCOMMAND | MF_CHECKED);

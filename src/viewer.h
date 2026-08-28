@@ -384,6 +384,7 @@ public:
     void HandleDropFiles(HDROP hDrop);
     void HandlePaste();
     void HandleCopy();
+    void HandleCopyPath();
     void OpenFileLocationAction();
     void ShowImageProperties();
     void OpenPreferencesDialog();

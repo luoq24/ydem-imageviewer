@@ -137,17 +137,18 @@ void ViewerApp::UpdateAcceleratorTable() {
         };
 
     // Map all configurable actions dynamically
+    // 已禁用动作映射为 0：复制/粘贴/编辑(旋转/翻转/裁剪)/保存/另存为/删除图片 不注册任何加速键
     WORD actionCmds[Act_Count] = {
         IDM_NEXT_IMG, IDM_PREV_IMG, IDM_FIRST_IMAGE, IDM_LAST_IMAGE, IDM_ZOOM_IN, IDM_ZOOM_OUT, IDM_FIT_TO_WINDOW,
-        IDM_ACTUAL_SIZE, IDM_FULLSCREEN, IDM_ROTATE_CW, IDM_ROTATE_CCW, IDM_FLIP,
-        IDM_CROP, IDM_CUSTOM_ZOOM, IDM_EXIT,
-        IDM_OPEN, IDM_REFRESH, IDM_COPY, IDM_PASTE, IDM_SAVE, IDM_SAVE_AS, IDM_DELETE_IMG, IDM_UNDO,
+        IDM_ACTUAL_SIZE, IDM_FULLSCREEN, 0, 0, 0,
+        0, IDM_CUSTOM_ZOOM, IDM_EXIT,
+        IDM_OPEN, IDM_REFRESH, 0, 0, 0, 0, 0, IDM_UNDO,
         IDM_CENTER_IMAGE, IDM_COMMIT_CROP, IDM_TOGGLE_OSD, IDM_PLAY_PAUSE, IDM_RESUME_ANIM,
         IDM_ANIM_NEXT_FRAME, IDM_ANIM_PREV_FRAME, IDM_ANIM_FIRST_FRAME, IDM_CONTEXT_MENU, IDM_SLIDESHOW
     };
 
     for (int i = 0; i < Act_Count; ++i) {
-        if (m_ctx.hotkeys[i]) {
+        if (m_ctx.hotkeys[i] && actionCmds[i] != 0) {
             addAccel(LOBYTE(m_ctx.hotkeys[i]), HIBYTE(m_ctx.hotkeys[i]), actionCmds[i]);
         }
     }

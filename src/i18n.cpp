@@ -56,6 +56,8 @@ namespace {
         { L"快捷键...", L"Keybindings..." },                                         // MenuKeybindings
         { L"删除图片", L"Delete Image" },                                             // MenuDeleteImage
         { L"退出", L"Exit" },                                                        // MenuExit
+        { L"复制路径", L"Copy Path" },                                               // MenuCopyPath
+        { L"原生", L"Native" },                                                      // MenuNative
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize

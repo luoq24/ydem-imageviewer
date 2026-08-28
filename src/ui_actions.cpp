@@ -118,6 +118,28 @@ void ViewerApp::HandleCopy() {
     }
 }
 
+void ViewerApp::HandleCopyPath() {
+    std::wstring path = m_ctx.loadingFilePath;
+    if (path.empty() || path == L"Clipboard Image") return;
+
+    if (OpenClipboard(m_ctx.hWnd)) {
+        EmptyClipboard();
+        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (path.length() + 1) * sizeof(wchar_t));
+        if (hMem) {
+            wchar_t* pData = static_cast<wchar_t*>(GlobalLock(hMem));
+            if (pData) {
+                wcscpy_s(pData, path.length() + 1, path.c_str());
+                GlobalUnlock(hMem);
+                SetClipboardData(CF_UNICODETEXT, hMem);
+            }
+            else {
+                GlobalFree(hMem);
+            }
+        }
+        CloseClipboard();
+    }
+}
+
 void ViewerApp::HandlePaste() {
     if (OpenClipboard(m_ctx.hWnd)) {
         if (IsClipboardFormatAvailable(CF_HDROP)) {

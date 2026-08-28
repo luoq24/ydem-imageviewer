@@ -53,6 +53,7 @@
 #define IDM_LAST_IMAGE              1074
 #define IDM_CONTEXT_MENU            1075
 #define IDM_SLIDESHOW               1076
+#define IDM_COPY_PATH               1080
 
 #define IDD_RESIZE_DIALOG           201
 #define IDC_EDIT_WIDTH              2001
