@@ -249,6 +249,8 @@ static const wchar_t* GetActionName(int actionIndex) {
     switch (static_cast<ActionID>(actionIndex)) {
     case Act_Next:         return Tr(StrId::MenuNextImage);
     case Act_Prev:         return Tr(StrId::MenuPrevImage);
+    case Act_FirstImage:   return Tr(StrId::ActNameFirstImage);
+    case Act_LastImage:    return Tr(StrId::ActNameLastImage);
     case Act_ZoomIn:       return Tr(StrId::MenuZoomIn);
     case Act_ZoomOut:      return Tr(StrId::MenuZoomOut);
     case Act_Fit:          return Tr(StrId::MenuFitToWindow);
@@ -288,6 +290,7 @@ static void LocalizeKeybindingsDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_STATIC_KB_SHORTCUT, Tr(StrId::KbShortcut));
     SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnApply));
     SetDlgItemTextW(hDlg, IDCANCEL, Tr(StrId::BtnClose));
+    SetDlgItemTextW(hDlg, IDC_BTN_RESTORE_DEFAULTS, Tr(StrId::BtnRestoreDefaults));
 }
 
 INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -331,6 +334,27 @@ INT_PTR CALLBACK ViewerApp::KeybindingsDialogProc(HWND hDlg, UINT message, WPARA
 
                 SetDlgItemTextW(hDlg, IDOK, Tr(StrId::BtnApplied));
                 SetTimer(hDlg, KEYBINDING_TIMER_ID, 1500, nullptr);
+            }
+            return (INT_PTR)TRUE;
+        }
+        case IDC_BTN_RESTORE_DEFAULTS: {
+            // 二次确认：询问是否恢复所有快捷键为默认
+            int ret = MessageBoxW(hDlg, Tr(StrId::KbRestoreConfirmMsg), Tr(StrId::KbRestoreConfirmTitle), MB_YESNO | MB_ICONQUESTION);
+            if (ret == IDYES) {
+                pApp->ResetHotkeysToDefault();
+
+                // Auto-save keybinding
+                if (!ctx.isFullScreen) {
+                    ctx.windowPlacement.length = sizeof(WINDOWPLACEMENT);
+                    GetWindowPlacement(ctx.hWnd, &ctx.windowPlacement);
+                }
+                pApp->WriteSettings(ctx.settingsPath, ctx.windowPlacement, ctx.startFullScreen, ctx.enforceSingleInstance, ctx.alwaysOnTop);
+
+                // 刷新当前选中动作的热键显示
+                int idx = static_cast<int>(SendMessageW(GetDlgItem(hDlg, IDC_COMBO_ACTION), CB_GETCURSEL, 0, 0));
+                if (idx != CB_ERR) {
+                    SendMessageW(GetDlgItem(hDlg, IDC_HOTKEY_CTRL), HKM_SETHOTKEY, ctx.hotkeys[idx], 0);
+                }
             }
             return (INT_PTR)TRUE;
         }

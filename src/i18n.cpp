@@ -71,6 +71,8 @@ namespace {
         { L"上一帧", L"Previous Frame" },                                             // ActNamePrevFrame
         { L"第一帧", L"First Frame" },                                                // ActNameFirstFrame
         { L"打开右键菜单", L"Open Context Menu" },                                     // ActNameContextMenu
+        { L"第一张图片", L"First Image" },                                             // ActNameFirstImage
+        { L"最后一张图片", L"Last Image" },                                             // ActNameLastImage
         // 快捷键名称
         { L"左方向键", L"Left Arrow" },                                               // HkLeft
         { L"右方向键", L"Right Arrow" },                                              // HkRight
@@ -146,6 +148,9 @@ namespace {
         { L"应用", L"Apply" },                                                       // BtnApply
         { L"已应用！", L"Applied!" },                                                 // BtnApplied
         { L"关闭", L"Close" },                                                       // BtnClose
+        { L"恢复默认", L"Restore Defaults" },                                         // BtnRestoreDefaults
+        { L"确定要将所有快捷键恢复为默认设置吗？", L"Are you sure you want to restore all keybindings to their default values?" }, // KbRestoreConfirmMsg
+        { L"恢复默认快捷键", L"Restore Default Keybindings" },                         // KbRestoreConfirmTitle
         { L"自定义缩放", L"Custom Zoom" },                                            // DlgZoomTitle
         { L"缩放百分比 (%):", L"Zoom Percentage (%):" },                              // ZoomLabel
         { L"调整图像大小", L"Resize Image" },                                          // DlgResizeTitle

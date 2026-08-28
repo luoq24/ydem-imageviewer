@@ -49,6 +49,8 @@
 #define IDM_ANIM_NEXT_FRAME         1070
 #define IDM_ANIM_PREV_FRAME         1071
 #define IDM_ANIM_FIRST_FRAME        1072
+#define IDM_FIRST_IMAGE             1073
+#define IDM_LAST_IMAGE              1074
 #define IDM_CONTEXT_MENU            1075
 #define IDM_SLIDESHOW               1076
 
@@ -84,5 +86,6 @@
 #define IDC_STATIC_ZOOM_LABEL       2038
 #define IDC_STATIC_RESIZE_WIDTH     2039
 #define IDC_STATIC_RESIZE_HEIGHT    2040
+#define IDC_BTN_RESTORE_DEFAULTS    2041
 
 #define IDC_STATIC                  -1

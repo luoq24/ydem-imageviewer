@@ -1,7 +1,31 @@
 #include "viewer.h"
 #include <string>
 
+// 默认快捷键参照 ACDSee 查看模式设置（见 https://help.acdsee.cn/acdsee-home-2023/.../Viewer_keyboard_shortcuts.htm）
+namespace {
+    const WORD g_defaultKeys[Act_Count] = {
+        // 浏览/缩放/全屏/旋转（ACDSee：→← 翻页，Home/End 首/尾，+ - 缩放，* 适应窗口，/ 实际大小，F 全屏，Ctrl+Shift+→/← 旋转）
+        MAKEWORD(VK_RIGHT, HOTKEYF_EXT), MAKEWORD(VK_LEFT, HOTKEYF_EXT), MAKEWORD(VK_HOME, HOTKEYF_EXT), MAKEWORD(VK_END, HOTKEYF_EXT),
+        VK_ADD, VK_SUBTRACT, VK_MULTIPLY, VK_DIVIDE, 'F',
+        MAKEWORD(VK_RIGHT, HOTKEYF_CONTROL | HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_LEFT, HOTKEYF_CONTROL | HOTKEYF_SHIFT | HOTKEYF_EXT),
+        0, 'C', 'Z', VK_ESCAPE,
+        // 文件/编辑（ACDSee：Ctrl+O 打开，F5 刷新，Ctrl+C/V 复制粘贴，Ctrl+S 保存，Delete 删除，Ctrl+Z 撤销）
+        MAKEWORD('O', HOTKEYF_CONTROL), VK_F5, MAKEWORD('C', HOTKEYF_CONTROL), MAKEWORD('V', HOTKEYF_CONTROL),
+        MAKEWORD('S', HOTKEYF_CONTROL), MAKEWORD('S', HOTKEYF_CONTROL | HOTKEYF_SHIFT), MAKEWORD(VK_DELETE, HOTKEYF_EXT),
+        MAKEWORD('Z', HOTKEYF_CONTROL), 0, VK_RETURN, 'I', VK_SPACE, MAKEWORD(VK_SPACE, HOTKEYF_SHIFT),
+        // 动画/多页导航（ACDSee：Shift+PageDown/PageUp/Home），幻灯片 Alt+S
+        MAKEWORD(VK_NEXT, HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_PRIOR, HOTKEYF_SHIFT | HOTKEYF_EXT),
+        MAKEWORD(VK_HOME, HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_F10, HOTKEYF_SHIFT), MAKEWORD('S', HOTKEYF_ALT)
+    };
+}
 
+// 将内存中的快捷键全部恢复为默认值，并重建加速键表
+void ViewerApp::ResetHotkeysToDefault() {
+    for (int i = 0; i < Act_Count; ++i) {
+        m_ctx.hotkeys[i] = g_defaultKeys[i];
+    }
+    UpdateAcceleratorTable();
+}
 
 void ViewerApp::ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool& fullscreen, bool& singleInstance, bool& alwaysOnTop) {
     auto getInt = [&](LPCWSTR sec, LPCWSTR key, int def) { return GetPrivateProfileIntW(sec, key, def, path.c_str());
@@ -39,17 +63,12 @@ void ViewerApp::ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool
     // Setup default before attempting read
     GetPrivateProfileStructW(L"Window", L"Placement", &wp, sizeof(WINDOWPLACEMENT), path.c_str());
     const wchar_t* keyNames[Act_Count] = {
-        L"Next", L"Prev", L"ZoomIn", L"ZoomOut", L"Fit", L"Actual", L"Fullscreen", L"RotateCW", L"RotateCCW", L"Flip", L"Crop", L"CustomZoom", L"Exit",
+        L"Next", L"Prev", L"FirstImage", L"LastImage", L"ZoomIn", L"ZoomOut", L"Fit", L"Actual", L"Fullscreen", L"RotateCW", L"RotateCCW", L"Flip", L"Crop", L"CustomZoom", L"Exit",
         L"Open", L"Refresh", L"Copy", L"Paste", L"Save", L"SaveAs", L"Delete", L"Undo", L"CenterImage", L"CommitCrop", L"ToggleOSD", L"PlayPause", L"ResumeAnim",
         L"AnimNext", L"AnimPrev", L"AnimFirst", L"ContextMenu", L"Slideshow"
     };
-    const WORD defaultKeys[Act_Count] = {
-        MAKEWORD(VK_RIGHT, HOTKEYF_EXT), MAKEWORD(VK_LEFT, HOTKEYF_EXT), MAKEWORD(VK_ADD, HOTKEYF_CONTROL), MAKEWORD(VK_SUBTRACT, HOTKEYF_CONTROL), MAKEWORD('0', HOTKEYF_CONTROL), MAKEWORD(VK_MULTIPLY, HOTKEYF_CONTROL), VK_F11, MAKEWORD(VK_UP, HOTKEYF_EXT), MAKEWORD(VK_DOWN, HOTKEYF_EXT), 'F', 'C', MAKEWORD('Z', HOTKEYF_CONTROL | HOTKEYF_SHIFT), VK_ESCAPE,
-        MAKEWORD('O', HOTKEYF_CONTROL), VK_F5, MAKEWORD('C', HOTKEYF_CONTROL), MAKEWORD('V', HOTKEYF_CONTROL), MAKEWORD('S', HOTKEYF_CONTROL), MAKEWORD('S', HOTKEYF_CONTROL | HOTKEYF_SHIFT), MAKEWORD(VK_DELETE, HOTKEYF_EXT), MAKEWORD('Z', HOTKEYF_CONTROL), 0, VK_RETURN, 'I', VK_SPACE, MAKEWORD(VK_SPACE, HOTKEYF_SHIFT),
-        MAKEWORD(VK_RIGHT, HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_LEFT, HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_UP, HOTKEYF_SHIFT | HOTKEYF_EXT), MAKEWORD(VK_F10, HOTKEYF_SHIFT), 'P'
-    };
     for (int i = 0; i < Act_Count; ++i) {
-        m_ctx.hotkeys[i] = (WORD)getInt(L"Keys", keyNames[i], defaultKeys[i]);
+        m_ctx.hotkeys[i] = (WORD)getInt(L"Keys", keyNames[i], g_defaultKeys[i]);
         BYTE vk = LOBYTE(m_ctx.hotkeys[i]);
         if (vk == VK_LEFT || vk == VK_RIGHT || vk == VK_UP || vk == VK_DOWN ||
             vk == VK_DELETE || vk == VK_INSERT || vk == VK_HOME || vk == VK_END ||
@@ -84,7 +103,7 @@ void ViewerApp::WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& w
     writeInt(L"Settings", L"SortAscending", m_ctx.isSortAscending ? 1 : 0);
 
     const wchar_t* keyNames[Act_Count] = {
-        L"Next", L"Prev", L"ZoomIn", L"ZoomOut", L"Fit", L"Actual", L"Fullscreen", L"RotateCW", L"RotateCCW", L"Flip", L"Crop", L"CustomZoom", L"Exit",
+        L"Next", L"Prev", L"FirstImage", L"LastImage", L"ZoomIn", L"ZoomOut", L"Fit", L"Actual", L"Fullscreen", L"RotateCW", L"RotateCCW", L"Flip", L"Crop", L"CustomZoom", L"Exit",
         L"Open", L"Refresh", L"Copy", L"Paste", L"Save", L"SaveAs", L"Delete", L"Undo", L"CenterImage", L"CommitCrop", L"ToggleOSD", L"PlayPause", L"ResumeAnim",
         L"AnimNext", L"AnimPrev", L"AnimFirst", L"ContextMenu", L"Slideshow"
     };
@@ -117,7 +136,7 @@ void ViewerApp::UpdateAcceleratorTable() {
 
     // Map all configurable actions dynamically
     WORD actionCmds[Act_Count] = {
-        IDM_NEXT_IMG, IDM_PREV_IMG, IDM_ZOOM_IN, IDM_ZOOM_OUT, IDM_FIT_TO_WINDOW,
+        IDM_NEXT_IMG, IDM_PREV_IMG, IDM_FIRST_IMAGE, IDM_LAST_IMAGE, IDM_ZOOM_IN, IDM_ZOOM_OUT, IDM_FIT_TO_WINDOW,
         IDM_ACTUAL_SIZE, IDM_FULLSCREEN, IDM_ROTATE_CW, IDM_ROTATE_CCW, IDM_FLIP,
         IDM_CROP, IDM_CUSTOM_ZOOM, IDM_EXIT,
         IDM_OPEN, IDM_REFRESH, IDM_COPY, IDM_PASTE, IDM_SAVE, IDM_SAVE_AS, IDM_DELETE_IMG, IDM_UNDO,

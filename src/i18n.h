@@ -20,7 +20,7 @@ enum class StrId {
     // 快捷键对话框中的动作名（与菜单不重复的部分）
     ActNameOpenFile, ActNameActualSize, ActNameFullscreen, ActNameCustomZoom, ActNameUndo, ActNameCenterImage,
     ActNameCommitCrop, ActNameToggleOSD, ActNamePlayPause, ActNameResumeAnim, ActNameNextFrame, ActNamePrevFrame,
-    ActNameFirstFrame, ActNameContextMenu,
+    ActNameFirstFrame, ActNameContextMenu, ActNameFirstImage, ActNameLastImage,
     // 快捷键名称
     HkLeft, HkRight, HkUp, HkDown, HkSpacebar, HkNumpadPrefix,
     // 消息框
@@ -39,6 +39,7 @@ enum class StrId {
     PrefZoomGroup, PrefZoomFit, PrefZoomActual, PrefLanguageGroup, PrefLangZh, PrefLangEn,
     // 快捷键 / 自定义缩放 / 调整大小对话框
     DlgKeybindingsTitle, KbAction, KbShortcut, BtnOk, BtnCancel, BtnApply, BtnApplied, BtnClose,
+    BtnRestoreDefaults, KbRestoreConfirmMsg, KbRestoreConfirmTitle,
     DlgZoomTitle, ZoomLabel,
     DlgResizeTitle, ResizeWidth, ResizeHeight, ResizeAspect,
     // OSD 信息叠加层

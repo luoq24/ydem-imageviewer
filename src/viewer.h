@@ -93,7 +93,7 @@ enum class DefaultZoomMode {
 };
 
 enum ActionID {
-    Act_Next = 0, Act_Prev, Act_ZoomIn, Act_ZoomOut, Act_Fit, Act_Actual,
+    Act_Next = 0, Act_Prev, Act_FirstImage, Act_LastImage, Act_ZoomIn, Act_ZoomOut, Act_Fit, Act_Actual,
     Act_Fullscreen, Act_RotateCW, Act_RotateCCW, Act_Flip, Act_Crop, Act_CustomZoom, Act_Exit,
     Act_Open, Act_Refresh, Act_Copy, Act_Paste, Act_Save, Act_SaveAs, Act_Delete, Act_Undo,
     Act_CenterImage, Act_CommitCrop, Act_ToggleOSD, Act_PlayPause, Act_ResumeAnim,
@@ -207,7 +207,6 @@ struct AppContext {
     bool enforceSingleInstance = true;
     bool alwaysOnTop = false;
     bool isDraggingImage = false;
-    bool rightClickScrolled = false; 
     std::wstring settingsPath;
     std::wstring currentDirectory;
     SortCriteria currentSortCriteria = SortCriteria::ByName;
@@ -402,6 +401,7 @@ public:
     void UpdateTitleBarTheme(HWND hWnd, BackgroundColor bgColor);
     void ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool& fullscreen, bool& singleInstance, bool& alwaysOnTop);
     void WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& wp, bool fullscreen, bool singleInstance, bool alwaysOnTop);
+    void ResetHotkeysToDefault();
     HRESULT CreateDecoderFromFile(const wchar_t* filePath, IWICBitmapDecoder** ppDecoder);
     // Dialog Callbacks
     static INT_PTR CALLBACK PreferencesDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
