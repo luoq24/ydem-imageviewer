@@ -385,6 +385,7 @@ public:
     void HandlePaste();
     void HandleCopy();
     void HandleCopyPath();
+    void SendToZiyuEdit();
     void OpenFileLocationAction();
     void ShowImageProperties();
     void OpenPreferencesDialog();

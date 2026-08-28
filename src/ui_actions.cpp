@@ -140,6 +140,49 @@ void ViewerApp::HandleCopyPath() {
     }
 }
 
+void ViewerApp::SendToZiyuEdit() {
+    std::wstring path = m_ctx.loadingFilePath;
+    if (path.empty() || path == L"Clipboard Image") return;
+
+    // 组装 JSON：{"local_task_key":["ziyu_edit",0],"source_path":"<路径>"}
+    // 接收端 LocalPipeReceiver 以 task_key, _ = local_task_key 解包二元数组，
+    // 首元素为注册的字符串键 "ziyu_edit"（WidgetZiyuImageEdit 监听），
+    // 收到后直接引用该路径创建 ImageEdit 任务（不移动、不复制原文件）
+    std::wstring escaped;
+    escaped.reserve(path.size() + 8);
+    for (wchar_t ch : path) {
+        if (ch == L'\\' || ch == L'"') escaped += L'\\';
+        escaped += ch;
+    }
+    std::wstring json = L"{\"local_task_key\":[\"ziyu_edit\",0],\"source_path\":\"" + escaped + L"\"}";
+
+    // 转 UTF-8（自娱工具按 UTF-8 解码）
+    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, json.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (utf8Len <= 0) return;
+    std::string utf8(utf8Len, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, json.c_str(), -1, utf8.data(), utf8Len, nullptr, nullptr);
+    utf8.resize(utf8Len - 1); // 去掉结尾的 '\0'
+
+    // 连接“自娱工具”的本地管道服务器（QLocalServer 对应命名管道）
+    const wchar_t* pipeName = L"\\\\.\\pipe\\rh_local_ziyu";
+    if (!WaitNamedPipeW(pipeName, 1000)) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrZiyuNotRunning), Tr(StrId::ErrCaption), MB_ICONWARNING);
+        return;
+    }
+
+    HANDLE hPipe = CreateFileW(pipeName, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                               nullptr, OPEN_EXISTING, 0, nullptr);
+    if (hPipe == INVALID_HANDLE_VALUE) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrZiyuSendFailed), Tr(StrId::ErrCaption), MB_ICONERROR);
+        return;
+    }
+
+    DWORD written = 0;
+    WriteFile(hPipe, utf8.data(), static_cast<DWORD>(utf8.size()), &written, nullptr);
+    FlushFileBuffers(hPipe);
+    CloseHandle(hPipe);
+}
+
 void ViewerApp::HandlePaste() {
     if (OpenClipboard(m_ctx.hWnd)) {
         if (IsClipboardFormatAvailable(CF_HDROP)) {

@@ -58,6 +58,7 @@ namespace {
         { L"退出", L"Exit" },                                                        // MenuExit
         { L"复制路径", L"Copy Path" },                                               // MenuCopyPath
         { L"原生", L"Native" },                                                      // MenuNative
+        { L"ziyu【编辑】", L"ziyu [Edit]" },                                         // MenuZiyuEdit
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize
@@ -88,6 +89,9 @@ namespace {
         { L"无法创建 Direct2D 工厂。", L"Failed to create Direct2D Factory." },         // ErrD2dFactory
         { L"无法创建 DirectWrite 工厂。", L"Failed to create DirectWrite Factory." },   // ErrDWriteFactory
         { L"无法创建窗口。", L"Failed to create window." },                             // ErrCreateWindow
+        { L"未检测到自娱工具在运行，请先启动“自娱工具”再重试。",
+          L"The Ziyu tool is not running. Please start it first and try again." },      // ErrZiyuNotRunning
+        { L"发送到自娱工具失败。", L"Failed to send to the Ziyu tool." },                // ErrZiyuSendFailed
         { L"确定要删除这张图片吗？", L"Are you sure you want to delete?" },              // DeleteConfirmMsg
         { L"确认删除", L"Confirm Delete" },                                           // DeleteConfirmTitle
         { L"此 HDR 图像过大，超出了 stb_image HDR 加载器的安全上限。",
