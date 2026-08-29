@@ -60,6 +60,7 @@ namespace {
         { L"复制路径", L"Copy Path" },                                               // MenuCopyPath
         { L"原生", L"Native" },                                                      // MenuNative
         { L"ziyu【编辑】", L"ziyu [Edit]" },                                         // MenuZiyuEdit
+        { L"lineart", L"lineart" },                                                  // MenuZiyuLineart
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize

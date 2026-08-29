@@ -388,6 +388,7 @@ public:
     void HandleCopy();
     void HandleCopyPath();
     void SendToZiyuEdit();
+    void SendToZiyuEditLineart();
     void OpenFileLocationAction();
     void ShowImageProperties();
     void OpenPreferencesDialog();
@@ -444,6 +445,8 @@ private:
     void HandleCommand(WORD cmd);
     void UpdateAcceleratorTable();
     void OnContextMenu(HWND hWnd, POINT pt);
+    // 通过本地管道向“自娱工具”发送任务（taskKey 为 my_comfyui 注册的任务键）
+    bool SendLocalTaskToZiyu(const wchar_t* taskKey);
 
     // Drawing Helpers
     void DrawOsdOverlay(ID2D1DeviceContext* renderTarget);
