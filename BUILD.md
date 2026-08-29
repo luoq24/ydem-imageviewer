@@ -38,6 +38,10 @@ Remove-Item wil.zip
 在任意 PowerShell 窗口执行（无需“开发者命令提示符”，脚本会自动定位 MSBuild）：
 
 ```powershell
+# 0) 先结束可能正在后台常驻的查看器进程，避免 .exe 被占用导致打包/链接失败
+taskkill /IM MinimalImageViewer.exe /F 2>$null
+
+# 1) 定位并调用 MSBuild 构建
 $inst = & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 & (Join-Path $inst 'MSBuild\Current\Bin\MSBuild.exe') d:\Pycharm_Files\ydem-imageviewer\src\MinimalImageViewer.vcxproj /p:Configuration=Release /p:Platform=x64 /t:Rebuild /v:minimal
 ```
@@ -46,8 +50,12 @@ $inst = & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
 
 ```bat
 cd /d d:\Pycharm_Files\ydem-imageviewer
+taskkill /IM MinimalImageViewer.exe /F >nul 2>&1
 msbuild src\MinimalImageViewer.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
+
+> 说明：本应用 Esc / 关闭按钮 / Alt+F4 现在只会“隐藏到后台”（进程常驻），
+> 因此打包前必须先用 `taskkill` 结束残留进程，否则 MSBuild 因 `.exe` 被占用而链接失败。
 
 ### 步骤 3：取产物
 

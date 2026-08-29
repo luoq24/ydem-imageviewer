@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <commctrl.h>
 #include <format>
+#include <d2d1helper.h>
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -112,6 +113,9 @@ void ViewerApp::HandleCommand(WORD cmd) {
         else {
             SendMessage(m_ctx.hWnd, WM_CLOSE, 0, 0);
         }
+        break;
+    case IDM_QUIT: // “关闭应用”：真正退出进程
+        DestroyWindow(m_ctx.hWnd);
         break;
     case IDM_OPEN_LOCATION: OpenFileLocationAction(); break;
     case IDM_PROPERTIES:    ShowImageProperties(); break;
@@ -292,7 +296,9 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     AppendMenuW(hNativeMenu, MF_STRING, IDM_PREFERENCES, Tr(StrId::MenuPreferences));
     AppendMenuW(hNativeMenu, MF_STRING, IDM_KEYBINDINGS, Tr(StrId::MenuKeybindings));
     AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hNativeMenu, MF_STRING, IDM_EXIT, (std::wstring(Tr(StrId::MenuExit)) + L"\tEsc").c_str());
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_EXIT, (std::wstring(Tr(StrId::MenuHideToBackground)) + L"\tEsc").c_str());
+    AppendMenuW(hNativeMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hNativeMenu, MF_STRING, IDM_QUIT, Tr(StrId::MenuCloseApp));
 
     AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hNativeMenu, Tr(StrId::MenuNative));
 
@@ -628,6 +634,8 @@ LRESULT ViewerApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             if (filePath.length() >= 2 && filePath.front() == L'"' && filePath.back() == L'"') {
                 filePath = filePath.substr(1, filePath.length() - 2);
             }
+            // 外部打开新图：先清掉当前显示的旧图并刷为背景色，避免“先闪旧图再出新图”
+            ClearCurrentImageView();
             LoadImageFromFile(filePath);
         }
         return TRUE;
@@ -663,6 +671,10 @@ LRESULT ViewerApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             }
         }
         break;
+    case WM_CLOSE:
+        // Esc / 关闭按钮 / Alt+F4 统一为“隐藏到后台”，进程常驻以便下次看图更快
+        HideToBackground();
+        return 0;
     case WM_DESTROY:
         KillTimer(m_ctx.hWnd, ANIMATION_TIMER_ID);
         KillTimer(m_ctx.hWnd, AUTO_REFRESH_TIMER_ID);
@@ -682,5 +694,106 @@ LRESULT ViewerApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void ViewerApp::HideToBackground() {
+    // 1. 使所有在途的加载/预加载/目录扫描任务失效（loadSequenceId 机制会拦截过期结果）
+    m_ctx.cancelPreloading = true;
+    ++m_ctx.loadSequenceId;
+    m_ctx.isLoading = false;
+    CleanupPreloadingThreads();
+    KillTimer(m_ctx.hWnd, ANIMATION_TIMER_ID);
+    KillTimer(m_ctx.hWnd, AUTO_REFRESH_TIMER_ID);
+    KillTimer(m_ctx.hWnd, LOADING_TIMER_ID);
+    KillTimer(m_ctx.hWnd, NAV_DEBOUNCE_TIMER_ID);
+    KillTimer(m_ctx.hWnd, SLIDESHOW_TIMER_ID);
+
+    // 保持全屏状态：全屏时按 Esc 直接隐藏到后台，下次唤起仍以全屏显示
+    //（不调用 ToggleFullScreen，保留 isFullScreen / WS_POPUP 样式与窗口位置）
+
+    // 2. 短暂等待后台线程收尾，避免与下面的清理产生竞态
+    int waitMs = 300;
+    while (m_ctx.activeBackgroundThreads > 0 && waitMs > 0) {
+        Sleep(5);
+        waitMs -= 5;
+    }
+
+    // 3. 释放大块图片缓存（像素/解码器/预加载/动画），并把已呈现帧刷为背景色，
+    //    保留 WIC/D2D 工厂、渲染目标、交换链等设备资源，使下次看图无需重建
+    ClearCurrentImageView();
+
+    m_ctx.currentImageIndex = -1;
+    m_ctx.currentDirectory.clear();
+    m_ctx.currentFilePathOverride.clear();
+    m_ctx.pendingNavIndex = -1;
+    m_ctx.stagedFoundIndex = -1;
+    m_ctx.imageFiles.clear();
+    m_ctx.stagedImageFiles.clear();
+    m_ctx.isAnimated = false;
+    m_ctx.isSvg = false;
+    m_ctx.isCropMode = false;
+    m_ctx.isSelectingCropRect = false;
+    m_ctx.isCropPending = false;
+    m_ctx.isCropActive = false;
+    m_ctx.isFading = false;
+    m_ctx.isSlideshowActive = false;
+    m_ctx.startAtEnd = false;
+    m_ctx.lastCompositedFrame = -1;
+
+    // 4. 隐藏窗口，进程常驻后台
+    ShowWindow(m_ctx.hWnd, SW_HIDE);
+
+    // 5. 将工作集交还系统，压低后台常驻内存
+    SetProcessWorkingSetSize(GetCurrentProcess(), (SIZE_T)-1, (SIZE_T)-1);
+}
+
+void ViewerApp::ClearCurrentImageView() {
+    // 释放大块图片缓存（保留 WIC/D2D 工厂、渲染目标、交换链等设备资源）
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_ctx.wicMutex);
+        m_ctx.d2dBitmap = nullptr;
+        m_ctx.wicConverter = nullptr;
+        m_ctx.wicConverterOriginal = nullptr;
+        m_ctx.undoStack.clear();
+        m_ctx.rawFileData.clear();
+        m_ctx.stagedRawFileData.clear();
+        m_ctx.wicStream = nullptr;
+        m_ctx.stagedWicStream = nullptr;
+        m_ctx.stagedFrames.clear();
+        m_ctx.stagedDelays.clear();
+        m_ctx.stagedFrameMetadata.clear();
+        m_ctx.stagedStaticConverter = nullptr;
+        m_ctx.animationDecoder = nullptr;
+        m_ctx.currentAnimatedConverter = nullptr;
+        m_ctx.animationD2DBitmaps.clear();
+        m_ctx.animationFrameMetadata.clear();
+        m_ctx.animationFrameDelays.clear();
+        m_ctx.animationCanvas.clear();
+        m_ctx.animationCanvasPrev.clear();
+        m_ctx.highResImageSource = nullptr;
+        m_ctx.svgDocument = nullptr;
+        m_ctx.svgData.clear();
+        m_ctx.stagedSvgData.clear();
+    }
+    m_ctx.isOsdCacheValid = false;
+
+    // 立即把已呈现帧刷为背景色，避免窗口重新显示时残留旧图造成闪屏
+    if (m_ctx.renderTarget) {
+        m_ctx.renderTarget->BeginDraw();
+        D2D1_COLOR_F color;
+        switch (m_ctx.bgColor) {
+        case BackgroundColor::Black:      color = D2D1::ColorF(0.0f, 0.0f, 0.0f); break;
+        case BackgroundColor::White:      color = D2D1::ColorF(1.0f, 1.0f, 1.0f); break;
+        case BackgroundColor::Transparent: color = D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f); break;
+        default:
+        case BackgroundColor::Grey:       color = D2D1::ColorF(0.117f, 0.117f, 0.117f); break;
+        }
+        m_ctx.renderTarget->Clear(color);
+        m_ctx.renderTarget->EndDraw();
+        if (m_ctx.swapChain) {
+            m_ctx.swapChain->Present(1, 0);
+        }
+    }
+    InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
 }
 

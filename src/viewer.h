@@ -403,6 +403,8 @@ public:
     void FlipImage();
     bool GetCurrentImageSize(UINT* width, UINT* height);
     void ApplyMonitorPlacement(); // 核心功能1：根据图片方向移动到合适显示器
+    void HideToBackground();      // Esc / 关闭按钮 / Alt+F4：隐藏窗口，进程常驻，仅释放大块图片缓存
+    void ClearCurrentImageView(); // 释放当前图片缓存并把已呈现帧刷为背景色（外部打开新图前调用，避免旧图闪屏）
     ImageProperties GetCurrentOsdProperties();
     void ConvertWindowToImagePoint(POINT pt, float& localX, float& localY);
     void ConvertImageToWindowPoint(float localX, float localY, POINT& pt);

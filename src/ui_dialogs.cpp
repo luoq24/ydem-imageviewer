@@ -267,7 +267,7 @@ static const wchar_t* GetActionName(int actionIndex) {
     case Act_Flip:         return Tr(StrId::MenuFlip);
     case Act_Crop:         return Tr(StrId::MenuCrop);
     case Act_CustomZoom:   return Tr(StrId::ActNameCustomZoom);
-    case Act_Exit:         return Tr(StrId::MenuExit);
+    case Act_Exit:         return Tr(StrId::MenuHideToBackground);
     case Act_Open:         return Tr(StrId::ActNameOpenFile);
     case Act_Refresh:      return Tr(StrId::MenuRefresh);
     case Act_Copy:         return Tr(StrId::MenuCopy);

@@ -16,7 +16,8 @@ enum class StrId {
     MenuSortBy, MenuSortNameAsc, MenuSortNameDesc, MenuSortDateAsc, MenuSortDateDesc, MenuSortSizeAsc, MenuSortSizeDesc,
     MenuEdit, MenuRotateCW, MenuRotateCCW, MenuFlip, MenuCrop, MenuResizeImage,
     MenuView, MenuZoomIn, MenuZoomOut, MenuActualSize100, MenuZoom200, MenuZoom300, MenuFitToWindow, MenuFullScreen, MenuToggleSlideshow,
-    MenuSave, MenuSaveAs, MenuOpenLocation, MenuProperties, MenuPreferences, MenuKeybindings, MenuDeleteImage, MenuExit,
+    MenuSave, MenuSaveAs, MenuOpenLocation, MenuProperties, MenuPreferences, MenuKeybindings, MenuDeleteImage,
+    MenuHideToBackground, MenuCloseApp,
     MenuCopyPath, MenuNative, MenuZiyuEdit,
     // 快捷键对话框中的动作名（与菜单不重复的部分）
     ActNameOpenFile, ActNameActualSize, ActNameFullscreen, ActNameCustomZoom, ActNameUndo, ActNameCenterImage,

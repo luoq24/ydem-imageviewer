@@ -150,6 +150,10 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
     if (m_ctx.enforceSingleInstance) {
         HWND existingWnd = FindWindowW(L"MinimalImageViewer", nullptr);
         if (existingWnd) {
+            // 窗口可能处于“隐藏到后台”状态（进程常驻），需要先显示再置前
+            if (!IsWindowVisible(existingWnd)) {
+                ShowWindow(existingWnd, SW_SHOW);
+            }
             SetForegroundWindow(existingWnd);
             if (IsIconic(existingWnd)) {
                 ShowWindow(existingWnd, SW_RESTORE);

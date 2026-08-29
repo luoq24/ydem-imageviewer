@@ -20,6 +20,10 @@ exit /b 1
 
 :build
 echo 使用 MSBuild: %MSBUILD%
+
+rem 结束可能正在后台常驻的查看器进程，避免 .exe 被占用导致打包/链接失败
+taskkill /IM MinimalImageViewer.exe /F >nul 2>&1
+
 "%MSBUILD%" src\MinimalImageViewer.vcxproj /p:Configuration=Release /p:Platform=x64 /m /nologo
 set "BUILD_RESULT=%ERRORLEVEL%"
 echo.

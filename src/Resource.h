@@ -55,6 +55,7 @@
 #define IDM_SLIDESHOW               1076
 #define IDM_COPY_PATH               1080
 #define IDM_SEND_ZYU_EDIT           1081
+#define IDM_QUIT                    1082
 
 #define IDD_RESIZE_DIALOG           201
 #define IDC_EDIT_WIDTH              2001

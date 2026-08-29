@@ -55,7 +55,8 @@ namespace {
         { L"设置...", L"Preferences..." },                                           // MenuPreferences
         { L"快捷键...", L"Keybindings..." },                                         // MenuKeybindings
         { L"删除图片", L"Delete Image" },                                             // MenuDeleteImage
-        { L"退出", L"Exit" },                                                        // MenuExit
+        { L"隐藏到后台", L"Hide to Background" },                                     // MenuHideToBackground
+        { L"关闭应用", L"Close App" },                                                // MenuCloseApp
         { L"复制路径", L"Copy Path" },                                               // MenuCopyPath
         { L"原生", L"Native" },                                                      // MenuNative
         { L"ziyu【编辑】", L"ziyu [Edit]" },                                         // MenuZiyuEdit
