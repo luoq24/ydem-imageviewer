@@ -69,7 +69,7 @@ void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd)
     m_ctx.isOsdCacheValid = false;
     m_ctx.loadStartTime = GetTickCount64();
     SetTimer(m_ctx.hWnd, LOADING_TIMER_ID, 700, nullptr);
-    m_ctx.loadingFilePath = filePath;
+    { std::scoped_lock lk(m_ctx.pathMutex); m_ctx.loadingFilePath = filePath; }
     m_ctx.startAtEnd = startAtEnd;
     {
         std::lock_guard<std::recursive_mutex> lock(m_ctx.wicMutex);

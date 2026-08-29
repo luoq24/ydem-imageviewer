@@ -259,6 +259,8 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
 
     UpdateAcceleratorTable();
 
+    StartPathQueryServer();
+
     MSG msg{};
     while (GetMessage(&msg, nullptr, 0, 0)) {
         if (!m_ctx.hAccelTable || !TranslateAcceleratorW(m_ctx.hWnd, m_ctx.hAccelTable.get(), &msg)) {
@@ -270,6 +272,7 @@ int ViewerApp::Run(HINSTANCE hInstance, int nCmdShow, LPWSTR lpCmdLine) {
     timeEndPeriod(1);
     m_ctx.isShuttingDown = true;
     CleanupLoadingThread();
+    StopPathQueryServer();
 
     // Allow up to 1.5 seconds for background threads to cleanly exit
     int timeoutMs = 1500;

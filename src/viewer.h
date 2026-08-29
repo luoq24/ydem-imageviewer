@@ -34,6 +34,7 @@
 #include <dxgi1_2.h>
 #include <mutex>
 #include <atomic>
+#include <thread>
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 #include <wil/resource.h>
@@ -224,6 +225,7 @@ struct AppContext {
     std::recursive_mutex wicMutex{};
     ULONGLONG loadStartTime = 0;
 
+    std::recursive_mutex pathMutex{};  // 保护 loadingFilePath 的跨线程读写
     std::wstring loadingFilePath;
     GUID originalContainerFormat = {};
     bool startAtEnd = false;
@@ -410,6 +412,12 @@ public:
     void WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& wp, bool fullscreen, bool singleInstance, bool alwaysOnTop);
     void ResetHotkeysToDefault();
     HRESULT CreateDecoderFromFile(const wchar_t* filePath, IWICBitmapDecoder** ppDecoder);
+
+    // 路径查询服务（供自用软件查询当前图片路径）
+    void StartPathQueryServer();
+    void StopPathQueryServer();
+    std::wstring GetCurrentImagePath();
+
     // Dialog Callbacks
     static INT_PTR CALLBACK PreferencesDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
     static INT_PTR CALLBACK KeybindingsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -420,6 +428,9 @@ public:
 
 private:
     AppContext m_ctx;
+
+    std::thread m_pathServerThread;
+    std::atomic<bool> m_pathServerRunning{ false };
 
 public:
     AppContext& GetContext() { return m_ctx; }

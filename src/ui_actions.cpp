@@ -56,7 +56,7 @@ void ViewerApp::DeleteCurrentImage() {
                                     m_ctx.wicConverterOriginal = nullptr;
                                     m_ctx.undoStack.clear();
                                     m_ctx.d2dBitmap = nullptr;
-                                    m_ctx.loadingFilePath = L"";
+                                    { std::scoped_lock plk(m_ctx.pathMutex); m_ctx.loadingFilePath = L""; }
                                 }
                                 InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
                                 SetWindowTextW(m_ctx.hWnd, AppNameAndVersion());
@@ -219,7 +219,7 @@ void ViewerApp::HandlePaste() {
                         m_ctx.imageFiles.clear();
                         m_ctx.currentImageIndex = -1;
                         m_ctx.currentDirectory = L"";
-                        m_ctx.loadingFilePath = L"Clipboard Image";
+                        { std::scoped_lock plk(m_ctx.pathMutex); m_ctx.loadingFilePath = L"Clipboard Image"; }
                         m_ctx.originalContainerFormat = GUID_ContainerFormatPng;
                         m_ctx.isOsdCacheValid = false;
 
@@ -380,4 +380,65 @@ void ViewerApp::ApplyMonitorPlacement() {
         mapped.right - mapped.left, mapped.bottom - mapped.top,
         SWP_NOZORDER | SWP_NOACTIVATE);
     m_ctx.suppressDpiResize = false;
+}
+
+// ===== 路径查询服务（供自用软件查询当前图片路径） =====
+
+std::wstring ViewerApp::GetCurrentImagePath() {
+    std::scoped_lock lock(m_ctx.pathMutex);
+    return m_ctx.loadingFilePath;
+}
+
+void ViewerApp::StartPathQueryServer() {
+    if (m_pathServerRunning.exchange(true)) return;
+    m_pathServerThread = std::thread([this]() {
+        const wchar_t* pipeName = L"\\\\.\\pipe\\rh_local_imageviewer";
+        while (m_pathServerRunning.load()) {
+            HANDLE hPipe = CreateNamedPipeW(pipeName,
+                PIPE_ACCESS_DUPLEX,
+                PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+                1, 65536, 65536, 0, nullptr);
+            if (hPipe == INVALID_HANDLE_VALUE) { Sleep(200); continue; }
+
+            // 阻塞等待客户端连接（StopPathQueryServer 用哑连接唤醒）
+            ConnectNamedPipe(hPipe, nullptr);
+            if (!m_pathServerRunning.load()) { CloseHandle(hPipe); break; }
+
+            // 读取请求（客户端发来的 JSON，内容不严格校验）
+            char buf[8192] = {};
+            DWORD got = 0;
+            ReadFile(hPipe, buf, sizeof(buf), &got, nullptr);
+
+            // 响应：当前完整路径（UTF-8）
+            std::wstring path = GetCurrentImagePath();
+            std::wstring esc; esc.reserve(path.size() + 8);
+            for (wchar_t ch : path) {
+                if (ch == L'\\' || ch == L'"') esc += L'\\';
+                esc += ch;
+            }
+            std::wstring wj = L"{\"local_task_key\":[\"current_path\",0],\"current_path\":\"" + esc + L"\"}";
+
+            int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wj.c_str(), -1, nullptr, 0, nullptr, nullptr);
+            std::string json;
+            if (utf8Len > 0) {
+                json.resize(utf8Len - 1);
+                WideCharToMultiByte(CP_UTF8, 0, wj.c_str(), -1, json.data(), utf8Len, nullptr, nullptr);
+            }
+
+            DWORD wr = 0;
+            WriteFile(hPipe, json.data(), static_cast<DWORD>(json.size()), &wr, nullptr);
+            FlushFileBuffers(hPipe);
+            CloseHandle(hPipe);
+        }
+    });
+}
+
+void ViewerApp::StopPathQueryServer() {
+    if (!m_pathServerRunning.exchange(false)) return;
+    // 用哑连接唤醒可能阻塞在 ConnectNamedPipe 的服务线程
+    HANDLE h = CreateFileW(L"\\\\.\\pipe\\rh_local_imageviewer",
+                           GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                           OPEN_EXISTING, 0, nullptr);
+    if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+    if (m_pathServerThread.joinable()) m_pathServerThread.join();
 }
