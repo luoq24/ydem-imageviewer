@@ -93,6 +93,22 @@ void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd)
         m_ctx.currentImageIndex = -1;
         m_ctx.currentDirectory = folder;
     }
+    else if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
+        // 同一目录的缓存列表仍有效。若正在打开的文件不在缓存列表中，
+        // 说明目录内容已变化（例如查看器运行期间新生成了图片），缓存已
+        // 过期 —— 丢弃它以便重新扫描目录，导航时使用最新列表而非回绕到首图。
+        bool foundInCache = false;
+        for (const auto& f : m_ctx.imageFiles) {
+            if (_wcsicmp(f.c_str(), filePath.c_str()) == 0) {
+                foundInCache = true;
+                break;
+            }
+        }
+        if (!foundInCache) {
+            m_ctx.imageFiles.clear();
+            m_ctx.currentImageIndex = -1;
+        }
+    }
 
     InvalidateRect(m_ctx.hWnd, nullptr, FALSE);
     m_ctx.RunBackgroundTask([this, filePath, mySeqId]() {
