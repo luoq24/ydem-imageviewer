@@ -389,6 +389,7 @@ public:
     void HandleCopyPath();
     void SendToZiyuEdit();
     void SendToZiyuEditLineart();
+    void SendToZiyuH3();
     void OpenFileLocationAction();
     void ShowImageProperties();
     void OpenPreferencesDialog();

@@ -193,6 +193,11 @@ void ViewerApp::SendToZiyuEditLineart() {
     SendLocalTaskToZiyu(L"lineart");
 }
 
+void ViewerApp::SendToZiyuH3() {
+    // 触发“自娱工具”创建“H3”页签下的新任务（参考图1 = 当前图片）
+    SendLocalTaskToZiyu(L"ziyu_h3");
+}
+
 void ViewerApp::HandlePaste() {
     if (OpenClipboard(m_ctx.hWnd)) {
         if (IsClipboardFormatAvailable(CF_HDROP)) {

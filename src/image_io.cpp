@@ -98,15 +98,22 @@ void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd)
         // 说明目录内容已变化（例如查看器运行期间新生成了图片），缓存已
         // 过期 —— 丢弃它以便重新扫描目录，导航时使用最新列表而非回绕到首图。
         bool foundInCache = false;
-        for (const auto& f : m_ctx.imageFiles) {
-            if (_wcsicmp(f.c_str(), filePath.c_str()) == 0) {
+        int foundIdx = -1;
+        for (int i = 0; i < static_cast<int>(m_ctx.imageFiles.size()); ++i) {
+            if (_wcsicmp(m_ctx.imageFiles[i].c_str(), filePath.c_str()) == 0) {
                 foundInCache = true;
+                foundIdx = i;
                 break;
             }
         }
         if (!foundInCache) {
             m_ctx.imageFiles.clear();
             m_ctx.currentImageIndex = -1;
+        }
+        else {
+            // 外部打开同目录下已在缓存中的文件时，同步当前索引到该文件位置，
+            // 否则 currentImageIndex 仍指向旧浏览位置，导致滚轮导航错位。
+            m_ctx.currentImageIndex = foundIdx;
         }
     }
 

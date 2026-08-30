@@ -36,6 +36,7 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_COPY_PATH:     HandleCopyPath(); break;
     case IDM_SEND_ZYU_EDIT: SendToZiyuEdit(); break;
     case IDM_SEND_ZYU_LINEART: SendToZiyuEditLineart(); break;
+    case IDM_SEND_ZYU_H3: SendToZiyuH3(); break;
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
             size_t size = m_ctx.imageFiles.size();
@@ -254,6 +255,8 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     AppendMenuW(hMenu, ziyuFlags, IDM_SEND_ZYU_EDIT, Tr(StrId::MenuZiyuEdit));
     UINT lineartFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, lineartFlags, IDM_SEND_ZYU_LINEART, Tr(StrId::MenuZiyuLineart));
+    UINT h3Flags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, h3Flags, IDM_SEND_ZYU_H3, Tr(StrId::MenuZiyuH3));
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
     HMENU hNativeMenu = CreatePopupMenu();

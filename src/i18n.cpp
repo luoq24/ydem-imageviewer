@@ -61,6 +61,7 @@ namespace {
         { L"原生", L"Native" },                                                      // MenuNative
         { L"ziyu【编辑】", L"ziyu [Edit]" },                                         // MenuZiyuEdit
         { L"lineart", L"lineart" },                                                  // MenuZiyuLineart
+        { L"自娱【H3】", L"Ziyu [H3]" },                                               // MenuZiyuH3
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize
