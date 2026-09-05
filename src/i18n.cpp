@@ -62,6 +62,7 @@ namespace {
         { L"【自娱】编辑", L"[Ziyu] Edit" },                                         // MenuZiyuEdit
         { L"lineart", L"lineart" },                                                  // MenuZiyuLineart
         { L"【自娱】H3", L"[Ziyu] H3" },                                               // MenuZiyuH3
+        { L"【自娱】一键高清", L"[Ziyu] Quick HD" },                                    // MenuZiyuQuickHD
         { L"【player】播放", L"[player] Play" },                                       // MenuPlayerPlay
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile

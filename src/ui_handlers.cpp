@@ -37,6 +37,7 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_SEND_ZYU_EDIT: SendToZiyuEdit(); break;
     case IDM_SEND_ZYU_LINEART: SendToZiyuEditLineart(); break;
     case IDM_SEND_ZYU_H3: SendToZiyuH3(); break;
+    case IDM_SEND_ZYU_QUICK_HD: SendToZiyuQuickHD(); break;
     case IDM_SEND_PLAYER_PLAY: PlayInPotPlayer(); break;
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
@@ -259,6 +260,8 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     AppendMenuW(hMenu, ziyuFlags, IDM_SEND_ZYU_EDIT, Tr(StrId::MenuZiyuEdit));
     UINT h3Flags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, h3Flags, IDM_SEND_ZYU_H3, Tr(StrId::MenuZiyuH3));
+    UINT quickHdFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, quickHdFlags, IDM_SEND_ZYU_QUICK_HD, Tr(StrId::MenuZiyuQuickHD));
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
     UINT playerFlags = IsPlayerThumbnail(m_ctx.loadingFilePath) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, playerFlags, IDM_SEND_PLAYER_PLAY, Tr(StrId::MenuPlayerPlay));

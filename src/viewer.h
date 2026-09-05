@@ -390,6 +390,7 @@ public:
     void SendToZiyuEdit();
     void SendToZiyuEditLineart();
     void SendToZiyuH3();
+    void SendToZiyuQuickHD();
     void PlayInPotPlayer();
     bool IsPlayerThumbnail(const std::wstring& filePath);
     std::wstring GetPlayerConfigPath();

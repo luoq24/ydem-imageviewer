@@ -59,6 +59,7 @@
 #define IDM_SEND_ZYU_LINEART        1083
 #define IDM_SEND_ZYU_H3             1084
 #define IDM_SEND_PLAYER_PLAY        1085
+#define IDM_SEND_ZYU_QUICK_HD       1086
 
 #define IDD_RESIZE_DIALOG           201
 #define IDC_EDIT_WIDTH              2001

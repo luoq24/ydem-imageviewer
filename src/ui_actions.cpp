@@ -287,6 +287,11 @@ void ViewerApp::SendToZiyuH3() {
     SendLocalTaskToZiyu(L"ziyu_h3");
 }
 
+void ViewerApp::SendToZiyuQuickHD() {
+    // 触发“自娱工具”的“一键高清”（quick_hd，高清处理当前图片）
+    SendLocalTaskToZiyu(L"ziyu_quick_hd");
+}
+
 // ydem_player 的 config.yaml 路径（可在 MIV-settings.ini 的 [Player] 节用 ConfigPath 覆盖）
 std::wstring ViewerApp::GetPlayerConfigPath() {
     wchar_t buf[MAX_PATH] = {};
