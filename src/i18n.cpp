@@ -59,9 +59,10 @@ namespace {
         { L"关闭应用", L"Close App" },                                                // MenuCloseApp
         { L"复制路径", L"Copy Path" },                                               // MenuCopyPath
         { L"原生", L"Native" },                                                      // MenuNative
-        { L"ziyu【编辑】", L"ziyu [Edit]" },                                         // MenuZiyuEdit
+        { L"【自娱】编辑", L"[Ziyu] Edit" },                                         // MenuZiyuEdit
         { L"lineart", L"lineart" },                                                  // MenuZiyuLineart
-        { L"自娱【H3】", L"Ziyu [H3]" },                                               // MenuZiyuH3
+        { L"【自娱】H3", L"[Ziyu] H3" },                                               // MenuZiyuH3
+        { L"【player】播放", L"[player] Play" },                                       // MenuPlayerPlay
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize
@@ -95,6 +96,11 @@ namespace {
         { L"未检测到自娱工具在运行，请先启动“自娱工具”再重试。",
           L"The Ziyu tool is not running. Please start it first and try again." },      // ErrZiyuNotRunning
         { L"发送到自娱工具失败。", L"Failed to send to the Ziyu tool." },                // ErrZiyuSendFailed
+        { L"找不到 ydem_player 配置文件（config.yaml）。",
+          L"ydem_player config file (config.yaml) not found." },                       // ErrPlayerConfigMissing
+        { L"未能在 ydem_player 中找到与当前图片对应的视频。",
+          L"No matching video found in ydem_player for the current image." },          // ErrPlayerVideoNotFound
+        { L"启动 PotPlayer 失败。", L"Failed to launch PotPlayer." },                   // ErrPlayerLaunchFailed
         { L"确定要删除这张图片吗？", L"Are you sure you want to delete?" },              // DeleteConfirmMsg
         { L"确认删除", L"Confirm Delete" },                                           // DeleteConfirmTitle
         { L"此 HDR 图像过大，超出了 stb_image HDR 加载器的安全上限。",

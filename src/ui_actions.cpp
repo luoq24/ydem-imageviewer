@@ -1,6 +1,95 @@
 #include "viewer.h"
 #include <format>
 
+namespace {
+    // UTF-8 / UTF-16 转换（ydem_player 的 config.yaml 为 UTF-8）
+    std::string WideToUtf8(const std::wstring& w) {
+        int n = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+        std::string s(n, '\0');
+        if (n > 0) WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), s.data(), n, nullptr, nullptr);
+        return s;
+    }
+
+    std::wstring Utf8ToWide(const std::string& s) {
+        int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
+        std::wstring w(n, L'\0');
+        if (n > 0) MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), w.data(), n);
+        return w;
+    }
+
+    std::string TrimAscii(const std::string& s) {
+        size_t b = s.find_first_not_of(" \t");
+        if (b == std::string::npos) return {};
+        size_t e = s.find_last_not_of(" \t\r");
+        return s.substr(b, e - b + 1);
+    }
+
+    // 去掉 YAML 标量的成对引号，并还原双引号内的 \\ 与 \" 转义
+    std::string UnquoteYamlScalar(const std::string& v) {
+        std::string s = TrimAscii(v);
+        if (s.size() >= 2 && ((s.front() == '"' && s.back() == '"') || (s.front() == '\'' && s.back() == '\''))) {
+            char q = s.front();
+            std::string inner = s.substr(1, s.size() - 2);
+            std::string out;
+            out.reserve(inner.size());
+            for (size_t i = 0; i < inner.size(); ++i) {
+                if (q == '"' && inner[i] == '\\' && i + 1 < inner.size()) {
+                    char n = inner[++i];
+                    if (n == '\\' || n == '"') out += n;
+                    else { out += '\\'; out += n; }
+                }
+                else if (q == '\'' && inner[i] == '\'' && i + 1 < inner.size() && inner[i + 1] == '\'') {
+                    out += '\''; ++i;
+                }
+                else out += inner[i];
+            }
+            return out;
+        }
+        return s;
+    }
+
+    // 在 ydem_player 的 config.yaml 中按视频 id 查找视频文件路径。
+    // 缩略图文件名（去扩展名）即视频 id（如 v_a935f8a3.jpg → v_a935f8a3）。
+    // 视频条目均为 "- filename:" 起、内含 "id:"/"path:" 行，逐行扫描即可，无需完整 YAML 解析。
+    bool FindVideoPathInYaml(const std::wstring& yamlPath, const std::wstring& videoId, std::wstring& videoPath) {
+        HANDLE hFile = CreateFileW(yamlPath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                   nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hFile == INVALID_HANDLE_VALUE) return false;
+
+        std::string text;
+        char chunk[65536];
+        DWORD read = 0;
+        while (ReadFile(hFile, chunk, sizeof(chunk), &read, nullptr) && read > 0) text.append(chunk, read);
+        CloseHandle(hFile);
+
+        const std::string targetId = WideToUtf8(videoId);
+        std::string curId, curPath;
+        auto match = [&]() {
+            if (curId == targetId && !curPath.empty()) {
+                videoPath = Utf8ToWide(UnquoteYamlScalar(curPath));
+                return true;
+            }
+            return false;
+            };
+
+        size_t pos = 0;
+        while (pos < text.size()) {
+            size_t eol = text.find('\n', pos);
+            if (eol == std::string::npos) eol = text.size();
+            std::string t = TrimAscii(text.substr(pos, eol - pos));
+            pos = eol + 1;
+            if (t.empty()) continue;
+            if (t.rfind("- filename:", 0) == 0) {          // 新条目开始，先结算上一条
+                if (match()) return true;
+                curId.clear(); curPath.clear();
+            }
+            else if (t.rfind("id:", 0) == 0)   curId = TrimAscii(t.substr(3));
+            else if (t.rfind("path:", 0) == 0) curPath = TrimAscii(t.substr(5));
+        }
+        return match();                                     // 结算最后一个条目
+    }
+}
+
 void ViewerApp::OpenFileAction() {
     wchar_t szFile[MAX_PATH] = { 0 };
     OPENFILENAMEW ofn = { sizeof(OPENFILENAMEW) };
@@ -196,6 +285,83 @@ void ViewerApp::SendToZiyuEditLineart() {
 void ViewerApp::SendToZiyuH3() {
     // 触发“自娱工具”创建“H3”页签下的新任务（参考图1 = 当前图片）
     SendLocalTaskToZiyu(L"ziyu_h3");
+}
+
+// ydem_player 的 config.yaml 路径（可在 MIV-settings.ini 的 [Player] 节用 ConfigPath 覆盖）
+std::wstring ViewerApp::GetPlayerConfigPath() {
+    wchar_t buf[MAX_PATH] = {};
+    GetPrivateProfileStringW(L"Player", L"ConfigPath",
+                             L"D:\\Pycharm_Files\\ydem_player\\config\\config.yaml",
+                             buf, MAX_PATH, m_ctx.settingsPath.c_str());
+    return std::wstring(buf);
+}
+
+// 当前图片是否位于 ydem_player 缩略图目录下。
+// ydem_player 的缩略图按横竖版分目录存放：config\thumbnails\honz\、config\thumbnails\vert\，
+// 故这里对 thumbnails\ 子树做前缀匹配，两个子目录（及其它子目录）均视为命中。
+bool ViewerApp::IsPlayerThumbnail(const std::wstring& filePath) {
+    if (filePath.empty() || filePath == L"Clipboard Image") return false;
+
+    std::wstring configPath = GetPlayerConfigPath();
+    size_t slash = configPath.find_last_of(L"\\/");
+    std::wstring base = (slash == std::wstring::npos ? std::wstring() : configPath.substr(0, slash + 1))
+                        + L"thumbnails\\";
+
+    // 统一分隔符后做不区分大小写的前缀匹配
+    auto normalize = [](std::wstring s) {
+        std::replace(s.begin(), s.end(), L'/', L'\\');
+        return s;
+        };
+    std::wstring path = normalize(filePath);
+    std::wstring dir = normalize(base);
+    return path.size() > dir.size() && _wcsnicmp(path.c_str(), dir.c_str(), dir.size()) == 0;
+}
+
+void ViewerApp::PlayInPotPlayer() {
+    std::wstring thumbPath = m_ctx.loadingFilePath;
+    if (!IsPlayerThumbnail(thumbPath)) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrPlayerVideoNotFound), Tr(StrId::ErrCaption), MB_ICONWARNING);
+        return;
+    }
+
+    // 提取缩略图文件名（去扩展名）作为视频 id，如 v_a935f8a3.jpg → v_a935f8a3
+    std::wstring videoId = PathFindFileNameW(thumbPath.c_str());
+    size_t dot = videoId.find_last_of(L'.');
+    if (dot != std::wstring::npos && dot != 0) videoId.resize(dot);
+    if (videoId.empty()) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrPlayerVideoNotFound), Tr(StrId::ErrCaption), MB_ICONWARNING);
+        return;
+    }
+
+    // PotPlayer 路径可在 MIV-settings.ini 的 [Player] 节用 PotPlayerPath 覆盖
+    const std::wstring configPath = GetPlayerConfigPath();
+    wchar_t potBuf[MAX_PATH] = {};
+    GetPrivateProfileStringW(L"Player", L"PotPlayerPath",
+                             L"D:\\Program Files\\PotPlayer64\\PotPlayerMini64.exe",
+                             potBuf, MAX_PATH, m_ctx.settingsPath.c_str());
+    const std::wstring potPath(potBuf);
+
+    if (GetFileAttributesW(configPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrPlayerConfigMissing), Tr(StrId::ErrCaption), MB_ICONWARNING);
+        return;
+    }
+
+    std::wstring videoPath;
+    if (!FindVideoPathInYaml(configPath, videoId, videoPath)) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrPlayerVideoNotFound), Tr(StrId::ErrCaption), MB_ICONWARNING);
+        return;
+    }
+
+    // 与 potplayer_manager.py 的 add_video 一致：已有实例时用 /current 在现有实例中播放。
+    // 注意 PotPlayer 的 /current 仅对"已存在的实例"生效，未运行时需直接带文件启动才会播放
+    std::wstring params = L"\"" + videoPath + L"\"";
+    if (FindWindowW(L"PotPlayer64", nullptr) != nullptr) {
+        params += L" /current";
+    }
+    HINSTANCE h = ShellExecuteW(m_ctx.hWnd, L"open", potPath.c_str(), params.c_str(), nullptr, SW_SHOWNORMAL);
+    if ((INT_PTR)h <= 32) {
+        MessageBoxW(m_ctx.hWnd, Tr(StrId::ErrPlayerLaunchFailed), Tr(StrId::ErrCaption), MB_ICONERROR);
+    }
 }
 
 void ViewerApp::HandlePaste() {
