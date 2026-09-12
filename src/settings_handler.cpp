@@ -57,6 +57,7 @@ void ViewerApp::ReadSettings(const std::wstring& path, WINDOWPLACEMENT& wp, bool
     m_ctx.currentSortCriteria = static_cast<SortCriteria>((sortChoice < 0 || sortChoice > 2) ? 0 : sortChoice);
 
     m_ctx.isSortAscending = getInt(L"Settings", L"SortAscending", 1) == 1;
+    m_ctx.listLoopEnabled = getInt(L"Settings", L"ListLoop", 0) == 1;
     wp.length = sizeof(WINDOWPLACEMENT);
     wp.rcNormalPosition.left = CW_USEDEFAULT;
     wp.showCmd = SW_SHOWNORMAL;
@@ -103,6 +104,7 @@ void ViewerApp::WriteSettings(const std::wstring& path, const WINDOWPLACEMENT& w
     writeInt(L"Settings", L"DefaultZoomMode", static_cast<int>(m_ctx.defaultZoomMode));
     writeInt(L"Settings", L"SortCriteria", static_cast<int>(m_ctx.currentSortCriteria));
     writeInt(L"Settings", L"SortAscending", m_ctx.isSortAscending ? 1 : 0);
+    writeInt(L"Settings", L"ListLoop", m_ctx.listLoopEnabled ? 1 : 0);
 
     const wchar_t* keyNames[Act_Count] = {
         L"Next", L"Prev", L"FirstImage", L"LastImage", L"ZoomIn", L"ZoomOut", L"Fit", L"Actual", L"Fullscreen", L"RotateCW", L"RotateCCW", L"Flip", L"Crop", L"CustomZoom", L"Exit",

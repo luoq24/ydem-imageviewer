@@ -216,6 +216,7 @@ struct AppContext {
     SortCriteria currentSortCriteria = SortCriteria::ByName;
     bool isSortAscending = true;
     DefaultZoomMode defaultZoomMode = DefaultZoomMode::Fit;
+    bool listLoopEnabled = false; // 列表循环：到末尾后再"下一张"回到开头（默认关闭）
 
     wil::unique_haccel hAccelTable;
 

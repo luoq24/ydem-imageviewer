@@ -31,6 +31,7 @@ static void LocalizePreferencesDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_CHECK_ASK_DELETE, Tr(StrId::PrefAskDelete));
     SetDlgItemTextW(hDlg, IDC_CHECK_PRESERVE_ZOOM, Tr(StrId::PrefPreserveZoom));
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTO_MONITOR, Tr(StrId::PrefAutoMonitorPlacement));
+    SetDlgItemTextW(hDlg, IDC_CHECK_LIST_LOOP, Tr(StrId::PrefListLoop));
     SetDlgItemTextW(hDlg, IDC_STATIC_ZOOM_GROUP, Tr(StrId::PrefZoomGroup));
     SetDlgItemTextW(hDlg, IDC_RADIO_ZOOM_FIT, Tr(StrId::PrefZoomFit));
     SetDlgItemTextW(hDlg, IDC_RADIO_ZOOM_ACTUAL, Tr(StrId::PrefZoomActual));
@@ -78,6 +79,7 @@ INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARA
         CheckDlgButton(hDlg, IDC_CHECK_ASK_DELETE, ctx.askToDelete ? BST_CHECKED : BST_UNCHECKED);
         CheckDlgButton(hDlg, IDC_CHECK_PRESERVE_ZOOM, ctx.preserveZoomOnResize ? BST_CHECKED : BST_UNCHECKED);
         CheckDlgButton(hDlg, IDC_CHECK_AUTO_MONITOR, ctx.autoMonitorPlacement ? BST_CHECKED : BST_UNCHECKED);
+        CheckDlgButton(hDlg, IDC_CHECK_LIST_LOOP, ctx.listLoopEnabled ? BST_CHECKED : BST_UNCHECKED);
 
         CheckRadioButton(hDlg, IDC_RADIO_ZOOM_FIT, IDC_RADIO_ZOOM_ACTUAL,
             ctx.defaultZoomMode == DefaultZoomMode::Fit ? IDC_RADIO_ZOOM_FIT : IDC_RADIO_ZOOM_ACTUAL);
@@ -121,6 +123,7 @@ INT_PTR CALLBACK ViewerApp::PreferencesDialogProc(HWND hDlg, UINT message, WPARA
             ctx.askToDelete = (IsDlgButtonChecked(hDlg, IDC_CHECK_ASK_DELETE) == BST_CHECKED);
             ctx.preserveZoomOnResize = (IsDlgButtonChecked(hDlg, IDC_CHECK_PRESERVE_ZOOM) == BST_CHECKED);
             ctx.autoMonitorPlacement = (IsDlgButtonChecked(hDlg, IDC_CHECK_AUTO_MONITOR) == BST_CHECKED);
+            ctx.listLoopEnabled = (IsDlgButtonChecked(hDlg, IDC_CHECK_LIST_LOOP) == BST_CHECKED);
 
             if (IsDlgButtonChecked(hDlg, IDC_RADIO_ZOOM_FIT)) {
                 ctx.defaultZoomMode = DefaultZoomMode::Fit;

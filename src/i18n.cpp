@@ -150,6 +150,7 @@ namespace {
         { L"删除前询问", L"Ask before deleting" },                                     // PrefAskDelete
         { L"调整大小/全屏时保持缩放", L"Preserve zoom on resize/fullscreen" },            // PrefPreserveZoom
         { L"根据图片横竖方向自动切换显示器", L"Auto-move window to matching display orientation" }, // PrefAutoMonitorPlacement
+        { L"列表循环（浏览到最后一张后回到第一张）", L"List Loop (wrap to first after last image)" },  // PrefListLoop
         { L"默认缩放模式", L"Default Zoom Mode" },                                     // PrefZoomGroup
         { L"适应窗口", L"Fit to Window" },                                            // PrefZoomFit
         { L"实际大小 (100%)", L"Actual Size (100%)" },                                // PrefZoomActual

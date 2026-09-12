@@ -42,6 +42,8 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
             size_t size = m_ctx.imageFiles.size();
+            // 未开启列表循环时，最后一张后再点"下一张"不动作
+            if (!m_ctx.listLoopEnabled && m_ctx.currentImageIndex >= static_cast<int>(size) - 1) break;
             m_ctx.currentImageIndex = (m_ctx.currentImageIndex + 1) % static_cast<int>(size);
             LPCWSTR fileName = PathFindFileNameW(m_ctx.imageFiles[m_ctx.currentImageIndex].c_str());
             LPCWSTR appTitle = AppNameAndVersion();
@@ -53,6 +55,8 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_PREV_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
             size_t size = m_ctx.imageFiles.size();
+            // 未开启列表循环时，第一张后再点"上一张"不动作
+            if (!m_ctx.listLoopEnabled && m_ctx.currentImageIndex == 0) break;
             m_ctx.currentImageIndex = (m_ctx.currentImageIndex - 1 + static_cast<int>(size)) % static_cast<int>(size);
             LPCWSTR fileName = PathFindFileNameW(m_ctx.imageFiles[m_ctx.currentImageIndex].c_str());
             LPCWSTR appTitle = AppNameAndVersion();
