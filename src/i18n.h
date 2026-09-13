@@ -19,6 +19,7 @@ enum class StrId {
     MenuSave, MenuSaveAs, MenuOpenLocation, MenuProperties, MenuPreferences, MenuKeybindings, MenuDeleteImage,
     MenuHideToBackground, MenuCloseApp,
     MenuCopyPath, MenuNative, MenuZiyuEdit, MenuZiyuLineart, MenuZiyuH3, MenuZiyuQuickHD, MenuPlayerPlay,
+    MenuPsOpen, MenuPsLayer,
     // 快捷键对话框中的动作名（与菜单不重复的部分）
     ActNameOpenFile, ActNameActualSize, ActNameFullscreen, ActNameCustomZoom, ActNameUndo, ActNameCenterImage,
     ActNameCommitCrop, ActNameToggleOSD, ActNamePlayPause, ActNameResumeAnim, ActNameNextFrame, ActNamePrevFrame,

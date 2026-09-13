@@ -292,6 +292,16 @@ void ViewerApp::SendToZiyuQuickHD() {
     SendLocalTaskToZiyu(L"ziyu_quick_hd");
 }
 
+void ViewerApp::SendToPsOpen() {
+    // 触发“自娱工具”的“PS打开”（用 Photoshop 直接打开当前图片）
+    SendLocalTaskToZiyu(L"ps_open");
+}
+
+void ViewerApp::SendToPsLayer() {
+    // 触发“自娱工具”的“发PS图层”（经 sd-ppp 将当前图片作为新图层发入 Photoshop）
+    SendLocalTaskToZiyu(L"ps_layer");
+}
+
 // ydem_player 的 config.yaml 路径（可在 MIV-settings.ini 的 [Player] 节用 ConfigPath 覆盖）
 std::wstring ViewerApp::GetPlayerConfigPath() {
     wchar_t buf[MAX_PATH] = {};

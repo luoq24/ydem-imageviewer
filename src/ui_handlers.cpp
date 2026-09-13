@@ -38,6 +38,8 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_SEND_ZYU_LINEART: SendToZiyuEditLineart(); break;
     case IDM_SEND_ZYU_H3: SendToZiyuH3(); break;
     case IDM_SEND_ZYU_QUICK_HD: SendToZiyuQuickHD(); break;
+    case IDM_SEND_PS_OPEN: SendToPsOpen(); break;
+    case IDM_SEND_PS_LAYER: SendToPsLayer(); break;
     case IDM_SEND_PLAYER_PLAY: PlayInPotPlayer(); break;
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
@@ -259,6 +261,12 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     AppendMenuW(hMenu, copyPathFlags, IDM_COPY_PATH, Tr(StrId::MenuCopyPath));
     UINT lineartFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, lineartFlags, IDM_SEND_ZYU_LINEART, Tr(StrId::MenuZiyuLineart));
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+    // 【PS】命令块：借助“自娱工具”已有的 PS 打开 / 发PS图层功能
+    UINT psOpenFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, psOpenFlags, IDM_SEND_PS_OPEN, Tr(StrId::MenuPsOpen));
+    UINT psLayerFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, psLayerFlags, IDM_SEND_PS_LAYER, Tr(StrId::MenuPsLayer));
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
     UINT ziyuFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, ziyuFlags, IDM_SEND_ZYU_EDIT, Tr(StrId::MenuZiyuEdit));

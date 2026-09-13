@@ -392,6 +392,8 @@ public:
     void SendToZiyuEditLineart();
     void SendToZiyuH3();
     void SendToZiyuQuickHD();
+    void SendToPsOpen();
+    void SendToPsLayer();
     void PlayInPotPlayer();
     bool IsPlayerThumbnail(const std::wstring& filePath);
     std::wstring GetPlayerConfigPath();

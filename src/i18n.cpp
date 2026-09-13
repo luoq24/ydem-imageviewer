@@ -64,6 +64,8 @@ namespace {
         { L"【自娱】H3", L"[Ziyu] H3" },                                               // MenuZiyuH3
         { L"【自娱】一键高清", L"[Ziyu] Quick HD" },                                    // MenuZiyuQuickHD
         { L"【player】播放", L"[player] Play" },                                       // MenuPlayerPlay
+        { L"PS打开", L"Open in PS" },                                                // MenuPsOpen
+        { L"发PS图层", L"Send as PS Layer" },                                          // MenuPsLayer
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize
