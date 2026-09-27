@@ -93,6 +93,13 @@ enum class DefaultZoomMode {
     Actual = 1
 };
 
+// 锁定横/竖图：锁定后"上一张/下一张"自动跳过方向不符的图片
+enum class OrientationLock {
+    None = 0,
+    Landscape = 1,
+    Portrait = 2
+};
+
 enum ActionID {
     Act_Next = 0, Act_Prev, Act_FirstImage, Act_LastImage, Act_ZoomIn, Act_ZoomOut, Act_Fit, Act_Actual,
     Act_Fullscreen, Act_RotateCW, Act_RotateCCW, Act_Flip, Act_Crop, Act_CustomZoom, Act_Exit,
@@ -217,6 +224,8 @@ struct AppContext {
     bool isSortAscending = true;
     DefaultZoomMode defaultZoomMode = DefaultZoomMode::Fit;
     bool listLoopEnabled = false; // 列表循环：到末尾后再"下一张"回到开头（默认关闭）
+    OrientationLock orientationLock = OrientationLock::None; // 锁定横/竖图：切图时跳过方向不符的图片
+    bool pendingOrientationLockUpdate = false; // 新开图片加载完成后，把锁定目标更新为新图方向
 
     wil::unique_haccel hAccelTable;
 
@@ -397,6 +406,9 @@ public:
     void PlayInPotPlayer();
     bool IsPlayerThumbnail(const std::wstring& filePath);
     std::wstring GetPlayerConfigPath();
+    void ToggleOrientationLock();                                    // 锁定/解除横竖方向浏览
+    bool ImageMatchesOrientationLock(const std::wstring& filePath);  // 文件显示方向是否符合锁定方向
+    int FindNavigableImageIndex(int dir);                            // 上一张/下一张目标索引（含方向跳过）
     void OpenFileLocationAction();
     void ShowImageProperties();
     void OpenPreferencesDialog();

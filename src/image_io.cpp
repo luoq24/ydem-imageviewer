@@ -60,6 +60,66 @@ HRESULT ViewerApp::CreateDecoderFromFile(const wchar_t* filePath, IWICBitmapDeco
     return CreateDecoderFromStream_FullFileRead(m_ctx.wicFactory.Get(), filePath, ppDecoder, -1);
 }
 
+// 探测图片文件的"显示方向"（考虑 EXIF 旋转）：true=横图，false=竖图。
+// 无法判定尺寸时（SVG/QOI/HDR/损坏文件等）按横图处理，视为匹配、不跳过。
+bool ViewerApp::ImageMatchesOrientationLock(const std::wstring& filePath) {
+    UINT w = 0, h = 0;
+    ComPtr<IWICBitmapDecoder> decoder;
+    if (SUCCEEDED(CreateDecoderFromFile(filePath.c_str(), &decoder)) && decoder) {
+        ComPtr<IWICBitmapFrameDecode> frame;
+        if (SUCCEEDED(decoder->GetFrame(0, &frame)) && frame) {
+            frame->GetSize(&w, &h);
+        }
+    }
+    if (w == 0 || h == 0) return true;
+
+    // EXIF 方向（与主加载路径一致，走 Shell 属性 store）
+    UINT exifOrientation = 1;
+    ComPtr<IPropertyStore> pStore;
+    if (SUCCEEDED(SHGetPropertyStoreFromParsingName(filePath.c_str(), nullptr, GPS_DEFAULT, IID_PPV_ARGS(&pStore)))) {
+        wil::unique_prop_variant propValue;
+        if (SUCCEEDED(pStore->GetValue(PKEY_Photo_Orientation, &propValue))) {
+            if (propValue.vt == VT_UI2) exifOrientation = propValue.uiVal;
+        }
+    }
+
+    bool landscape = (w >= h);
+    if (exifOrientation >= 5 && exifOrientation <= 8) landscape = !landscape;
+    return (m_ctx.orientationLock == OrientationLock::Landscape) ? landscape : !landscape;
+}
+
+// 计算"上一张/下一张"的目标索引：dir=+1 下一张，-1 上一张。
+// 未开启方向锁定时退化为原有的相邻取图；开启后自动跳过方向不符的图片，
+// 绕一圈（或非循环模式到达列表端点）仍无匹配则返回 -1（保持当前图不动）。
+int ViewerApp::FindNavigableImageIndex(int dir) {
+    const int size = static_cast<int>(m_ctx.imageFiles.size());
+    if (size <= 0 || m_ctx.currentImageIndex < 0) return -1;
+    if (m_ctx.orientationLock == OrientationLock::None) {
+        return (m_ctx.currentImageIndex + dir + size) % size;
+    }
+    const int start = m_ctx.currentImageIndex;
+    int idx = start;
+    for (int step = 0; step < size; ++step) {
+        if (dir > 0) {
+            ++idx;
+            if (idx >= size) {
+                if (!m_ctx.listLoopEnabled) break;
+                idx = 0;
+            }
+        }
+        else {
+            --idx;
+            if (idx < 0) {
+                if (!m_ctx.listLoopEnabled) break;
+                idx = size - 1;
+            }
+        }
+        if (idx == start) break; // 绕回起点
+        if (ImageMatchesOrientationLock(m_ctx.imageFiles[idx])) return idx;
+    }
+    return -1;
+}
+
 
 void ViewerApp::LoadImageFromFile(const std::wstring& filePath, bool startAtEnd) {
     CleanupPreloadingThreads();
@@ -846,6 +906,9 @@ std::vector<std::wstring> ViewerApp::ScanDirectory(const std::wstring& directory
 
 void ViewerApp::OnImageReady(bool success, int seqId) {
     if (m_ctx.loadSequenceId != seqId) return;
+    // "新开图片"标记只对本次加载生效（无论成败），避免遗留到后续导航加载
+    const bool updateOrientationLock = m_ctx.pendingOrientationLockUpdate;
+    m_ctx.pendingOrientationLockUpdate = false;
     if (success) {
         std::lock_guard<std::recursive_mutex> lock(m_ctx.wicMutex);
         if (!m_ctx.stagedStaticConverter && m_ctx.stagedFrames.empty() && m_ctx.stagedSvgData.empty() && m_ctx.stagedFrameMetadata.empty()) {
@@ -952,6 +1015,16 @@ void ViewerApp::OnImageReady(bool success, int seqId) {
             }
         }
 
+        // 新开图片不受方向锁定跳过约束，但锁定继续且目标更新为新图方向
+        if (updateOrientationLock && m_ctx.orientationLock != OrientationLock::None) {
+            UINT lw = 0, lh = 0;
+            if (GetCurrentImageSize(&lw, &lh) && lw > 0 && lh > 0) {
+                bool landscape = (lw >= lh);
+                if (m_ctx.currentOrientation >= 5 && m_ctx.currentOrientation <= 8) landscape = !landscape;
+                m_ctx.orientationLock = landscape ? OrientationLock::Landscape : OrientationLock::Portrait;
+            }
+        }
+
         // 核心功能1：根据图片横竖方向将窗口移动到合适的显示器
         ApplyMonitorPlacement();
 
@@ -1049,6 +1122,7 @@ void ViewerApp::OnDirReady(int seqId) {
 // Fallback  handler
 void ViewerApp::FinalizeImageLoad(bool success, int foundIndex) {
     m_ctx.isLoading = false;
+    if (!success) m_ctx.pendingOrientationLockUpdate = false;
     KillTimer(m_ctx.hWnd, ANIMATION_TIMER_ID);
     {
         std::lock_guard<std::recursive_mutex> lock(m_ctx.wicMutex);

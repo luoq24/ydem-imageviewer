@@ -66,6 +66,7 @@ namespace {
         { L"【player】播放", L"[player] Play" },                                       // MenuPlayerPlay
         { L"PS打开", L"Open in PS" },                                                // MenuPsOpen
         { L"发PS图层", L"Send as PS Layer" },                                          // MenuPsLayer
+        { L"锁定横/竖图", L"Lock Landscape/Portrait" },                                 // MenuLockOrientation
         // 快捷键对话框中的动作名
         { L"打开文件", L"Open File" },                                                // ActNameOpenFile
         { L"实际大小", L"Actual Size" },                                              // ActNameActualSize

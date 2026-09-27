@@ -41,12 +41,16 @@ void ViewerApp::HandleCommand(WORD cmd) {
     case IDM_SEND_PS_OPEN: SendToPsOpen(); break;
     case IDM_SEND_PS_LAYER: SendToPsLayer(); break;
     case IDM_SEND_PLAYER_PLAY: PlayInPotPlayer(); break;
+    case IDM_LOCK_ORIENTATION: ToggleOrientationLock(); break;
     case IDM_NEXT_IMG:
         if (!m_ctx.imageFiles.empty() && m_ctx.currentImageIndex != -1) {
             size_t size = m_ctx.imageFiles.size();
             // 未开启列表循环时，最后一张后再点"下一张"不动作
             if (!m_ctx.listLoopEnabled && m_ctx.currentImageIndex >= static_cast<int>(size) - 1) break;
-            m_ctx.currentImageIndex = (m_ctx.currentImageIndex + 1) % static_cast<int>(size);
+            // 方向锁定开启时，自动跳过横/竖方向不符的图片；绕一圈无匹配则不动
+            int nextIdx = FindNavigableImageIndex(1);
+            if (nextIdx == -1) break;
+            m_ctx.currentImageIndex = nextIdx;
             LPCWSTR fileName = PathFindFileNameW(m_ctx.imageFiles[m_ctx.currentImageIndex].c_str());
             LPCWSTR appTitle = AppNameAndVersion();
             std::wstring title = std::vformat(Tr(StrId::TitleLoadingFormat), std::make_wformat_args(fileName, appTitle));
@@ -59,7 +63,10 @@ void ViewerApp::HandleCommand(WORD cmd) {
             size_t size = m_ctx.imageFiles.size();
             // 未开启列表循环时，第一张后再点"上一张"不动作
             if (!m_ctx.listLoopEnabled && m_ctx.currentImageIndex == 0) break;
-            m_ctx.currentImageIndex = (m_ctx.currentImageIndex - 1 + static_cast<int>(size)) % static_cast<int>(size);
+            // 方向锁定开启时，自动跳过横/竖方向不符的图片；绕一圈无匹配则不动
+            int prevIdx = FindNavigableImageIndex(-1);
+            if (prevIdx == -1) break;
+            m_ctx.currentImageIndex = prevIdx;
             LPCWSTR fileName = PathFindFileNameW(m_ctx.imageFiles[m_ctx.currentImageIndex].c_str());
             LPCWSTR appTitle = AppNameAndVersion();
             std::wstring title = std::vformat(Tr(StrId::TitleLoadingFormat), std::make_wformat_args(fileName, appTitle));
@@ -278,6 +285,10 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
     UINT playerFlags = IsPlayerThumbnail(m_ctx.loadingFilePath) ? MF_STRING : MF_STRING | MF_GRAYED;
     AppendMenuW(hMenu, playerFlags, IDM_SEND_PLAYER_PLAY, Tr(StrId::MenuPlayerPlay));
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+    // 【锁定】块：按当前图横/竖方向锁定浏览，上一张/下一张自动跳过方向不符的图片
+    UINT lockFlags = (m_ctx.currentImageIndex != -1) ? MF_STRING : MF_STRING | MF_GRAYED;
+    AppendMenuW(hMenu, lockFlags, IDM_LOCK_ORIENTATION, Tr(StrId::MenuLockOrientation));
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
     HMENU hNativeMenu = CreatePopupMenu();
 
@@ -330,6 +341,9 @@ void ViewerApp::OnContextMenu(HWND hWnd, POINT pt) {
 
     if (m_ctx.isSlideshowActive) {
         CheckMenuItem(hMenu, IDM_SLIDESHOW, MF_BYCOMMAND | MF_CHECKED);
+    }
+    if (m_ctx.orientationLock != OrientationLock::None) {
+        CheckMenuItem(hMenu, IDM_LOCK_ORIENTATION, MF_BYCOMMAND | MF_CHECKED);
     }
 
     int cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hWnd, nullptr);
@@ -662,6 +676,8 @@ LRESULT ViewerApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             }
             // 外部打开新图：先清掉当前显示的旧图并刷为背景色，避免“先闪旧图再出新图”
             ClearCurrentImageView();
+            // 外部打开属于"新开图片"，不受方向锁定跳过约束，但锁定目标随新图更新
+            if (m_ctx.orientationLock != OrientationLock::None) m_ctx.pendingOrientationLockUpdate = true;
             LoadImageFromFile(filePath);
         }
         return TRUE;

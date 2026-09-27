@@ -99,6 +99,8 @@ void ViewerApp::OpenFileAction() {
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER;
     if (GetOpenFileNameW(&ofn)) {
+        // 打开文件属于"新开图片"，不受方向锁定跳过约束，但锁定目标随新图更新
+        if (m_ctx.orientationLock != OrientationLock::None) m_ctx.pendingOrientationLockUpdate = true;
         LoadImageFromFile(szFile);
     }
 }
@@ -170,7 +172,9 @@ void ViewerApp::HandleDropFiles(HDROP hDrop) {
     if (charsRequired > 0) {
         std::wstring filePath(charsRequired + 1, L'\0');
         if (DragQueryFileW(hDrop, 0, filePath.data(), charsRequired + 1)) {
-            filePath.resize(charsRequired); 
+            filePath.resize(charsRequired);
+            // 拖放属于"新开图片"，不受方向锁定跳过约束，但锁定目标随新图更新
+            if (m_ctx.orientationLock != OrientationLock::None) m_ctx.pendingOrientationLockUpdate = true;
             LoadImageFromFile(filePath);
         }
     }
@@ -390,6 +394,8 @@ void ViewerApp::HandlePaste() {
                     std::wstring filePath(charsRequired + 1, L'\0');
                     if (DragQueryFileW(hDrop, 0, filePath.data(), charsRequired + 1)) {
                         filePath.resize(charsRequired);
+                        // 粘贴文件属于"新开图片"，不受方向锁定跳过约束，但锁定目标随新图更新
+                        if (m_ctx.orientationLock != OrientationLock::None) m_ctx.pendingOrientationLockUpdate = true;
                         LoadImageFromFile(filePath);
                     }
                 }
@@ -407,6 +413,13 @@ void ViewerApp::HandlePaste() {
                         // reset state for new pasted image
                         m_ctx.wicConverter = converter;
                         m_ctx.wicConverterOriginal = converter;
+                        // 粘贴位图属于"新开图片"：锁定继续，目标更新为剪贴板图片的方向
+                        if (m_ctx.orientationLock != OrientationLock::None) {
+                            UINT pw = 0, ph = 0;
+                            if (SUCCEEDED(converter->GetSize(&pw, &ph)) && pw > 0 && ph > 0) {
+                                m_ctx.orientationLock = (pw >= ph) ? OrientationLock::Landscape : OrientationLock::Portrait;
+                            }
+                        }
                         m_ctx.d2dBitmap = nullptr;
                         m_ctx.animationFrameMetadata.clear();
                         m_ctx.animationFrameDelays.clear();
@@ -436,6 +449,21 @@ void ViewerApp::HandlePaste() {
 
         CloseClipboard();
     }
+}
+
+// 锁定/解除当前图片的横竖方向。锁定后"上一张/下一张"自动跳过方向不符的图片；
+// 新开图片不受跳过约束，但锁定继续且目标更新为新图方向。
+void ViewerApp::ToggleOrientationLock() {
+    if (m_ctx.orientationLock != OrientationLock::None) {
+        m_ctx.orientationLock = OrientationLock::None;
+        return;
+    }
+    UINT w = 0, h = 0;
+    if (!GetCurrentImageSize(&w, &h) || w == 0 || h == 0) return;
+    // 考虑 EXIF 自动旋转：方向 5-8 时横竖互换
+    bool landscape = (w >= h);
+    if (m_ctx.currentOrientation >= 5 && m_ctx.currentOrientation <= 8) landscape = !landscape;
+    m_ctx.orientationLock = landscape ? OrientationLock::Landscape : OrientationLock::Portrait;
 }
 
 void ViewerApp::OpenFileLocationAction() {
